@@ -1,15 +1,15 @@
 * [首页]()
-* [简介](intro/WHY)
+* 简介
     * [-为什么使用 Stencli](intro/WHY)
     * [-goal 目标](intro/GOAL)
     * [-Browser support](intro/BROWSER)
     * [-快速开始](intro/START)
     * [-第一个component](intro/FIRST)
     * [-FAQ 常见问题]
-* [设计系统](design/)
+* 设计系统
     * [什么是设计系统?](design/)
     * [Stencli 和 设计系统?](design/BIND)
-* [组件](component/API)
+* 组件
     * [API](component/API)
     * [组件](component/COMPONENT)
     * [生命周期](component/LIFECYCLE)
@@ -22,7 +22,7 @@
     * [HOST 原素](component/HOST)
     * [样式](component/STYLE)
     * [function Component](component/FUNCTION)
-* [框架集成](frame/)
+* 框架集成
     * [Angular](frame/NG)
     * [REACT](frame/REACT)
     * [VUE](frame/VUE)
