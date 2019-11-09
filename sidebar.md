@@ -10,7 +10,7 @@
     * [什么是设计系统?](design/)
     * [Stencli 和 设计系统?](design/bind)
 * [组件](component/api)
-    * [API](component/api)
+    * [API](component/API)
     * [组件](component/component)
     * [生命周期](component/lifecycle)
     * [属性](component/properties)
