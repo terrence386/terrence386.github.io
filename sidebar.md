@@ -1,6 +1,6 @@
 * [首页]()
 * [简介](intro/WHY)
-    * [-为什么使用 Stencli](intro/WHY)
+    * [-为什么使用 Stencli](intro/why)
     * [-goal 目标](intro/GOAL)
     * [-Browser support](intro/BROWSER)
     * [-快速开始](intro/START)
