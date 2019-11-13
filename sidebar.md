@@ -28,3 +28,8 @@
     * [VUE](frame/VUE)
     * [Ember](frame/EM)
     * [Js](frame/JS)
+* Mysql
+    * [mysql](mysql/)
+    * [修改表数据](mysql/edit)
+    * [数据类型](mysql/datatype)
+    
