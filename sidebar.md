@@ -32,4 +32,5 @@
     * [mysql](mysql/)
     * [修改表数据](mysql/edit)
     * [数据类型](mysql/datatype)
+    * [函数](mysql/fun)
     

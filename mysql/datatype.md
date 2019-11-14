@@ -15,4 +15,14 @@ date|yyyy--mm-dd|1000-01-01-0000-12-3|3字节|
 datetime|yyyy-mm-dd hhmmss|---|8字节|
 timestamp|yyyy-mm-dd hhmmss|----|4字节|
 
+
 ##### 字符串类型
+|类型名称|说明||存储需求|
+|---|:--:|---:|---:|
+char||||
+varchar||||
+tinytext||||
+text||---||
+longtext||||
+
+##### 二进制类型
