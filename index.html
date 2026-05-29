@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -38,5 +38,747 @@
   <!-- <script src="//unpkg.com/docsify"></script> -->
 <script src="//unpkg.com/prismjs/components/prism-bash.js"></script>
 <script src="//unpkg.com/prismjs/components/prism-php.js"></script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漫画生成器 - 可视化编辑</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+  :root{--bg:#FFF8F0;--panel-bg:#FFF;--ink:#2D2B2A;--ink-light:#6B6560;--accent:#E8636F;--accent-soft:#F5A0A8;--sky:#A8D8EA;--sky-dark:#6BB7D0;--warm:#FFD93D;--warm-soft:#FFF0C2;--pink:#FFB5C2;--pink-soft:#FFE0E6;--green:#98D8AA;--border:#3D3A38;--bubble:#FFF;--bubble-her:#FFE8EC;--ed-border:#E8E4E0;--ed-bg:#FAF9F7}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Noto Sans SC',sans-serif;color:var(--ink);overflow:hidden;height:100vh}
+  /* Toolbar */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:48px;background:#fff;border-bottom:1px solid var(--ed-border);flex-shrink:0}
+  .toolbar-title{font-family:'Ma Shan Zheng',cursive;font-size:20px;color:var(--accent)}
+  .toolbar-actions{display:flex;gap:8px}
+  /* App Layout */
+  .app-layout{display:flex;height:calc(100vh - 48px);overflow:hidden}
+  /* Editor Sidebar */
+  .editor-sidebar{width:380px;flex-shrink:0;background:#fff;border-right:1px solid var(--ed-border);overflow-y:auto;height:100%}
+  .editor-sidebar::-webkit-scrollbar{width:4px}
+  .editor-sidebar::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+  /* Editor Sections */
+  .editor-section{padding:14px 16px;border-bottom:1px solid var(--ed-border)}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .section-title{font-size:12px;font-weight:600;color:var(--ink)}
+  .editor-group{margin-bottom:8px}
+  .editor-group label{display:block;font-size:11px;font-weight:500;color:var(--ink-light);margin-bottom:3px}
+  .editor-group input,.editor-group textarea,.editor-group select{width:100%;padding:7px 10px;border:1.5px solid #E0DCD8;border-radius:6px;font-size:12px;font-family:'Noto Sans SC',sans-serif;background:var(--ed-bg);transition:border-color .2s}
+  .editor-group input:focus,.editor-group textarea:focus,.editor-group select:focus{outline:none;border-color:var(--accent)}
+  .editor-group textarea{min-height:56px;resize:vertical}
+  .editor-row{display:flex;gap:8px}
+  /* Chapter Tabs */
+  .chapter-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:10px 16px;border-bottom:1px solid var(--ed-border);background:#FAFAFA}
+  .chapter-tab{display:flex;align-items:center;gap:3px;padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;border:1px solid var(--ed-border);transition:all .2s;white-space:nowrap}
+  .chapter-tab:hover{border-color:var(--accent-soft)}
+  .chapter-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .chapter-tab.add{background:var(--warm-soft);border-color:var(--warm);color:#8B7355;font-weight:600}
+  .tab-close{font-size:13px;line-height:1;opacity:.5;padding:0 2px;cursor:pointer}
+  .tab-close:hover{opacity:1}
+  /* Scene Cards */
+  .scene-card{border:1.5px solid var(--ed-border);border-radius:8px;margin-bottom:8px;overflow:hidden}
+  .scene-card-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--ed-bg);cursor:pointer;user-select:none}
+  .scene-card-header:hover{background:var(--warm-soft)}
+  .scene-card-title{font-size:12px;font-weight:600}
+  .scene-card-actions{display:flex;align-items:center;gap:2px}
+  .scene-card-body{padding:12px;border-top:1px solid var(--ed-border)}
+  /* Icon Buttons */
+  .btn-icon{width:22px;height:22px;border:none;background:transparent;cursor:pointer;border-radius:4px;font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--ink-light);transition:all .2s}
+  .btn-icon:hover{background:rgba(0,0,0,.06)}
+  .btn-icon.delete:hover{background:#FFE0E6;color:var(--accent)}
+  /* Buttons */
+  .btn{padding:6px 14px;border:none;border-radius:6px;font-size:12px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;transition:all .2s}
+  .btn-sm{padding:4px 10px;font-size:11px}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#D45560}
+  .btn-secondary{background:#F0EEEB;color:var(--ink)}
+  .btn-secondary:hover{background:#E5E2DF}
+  /* Dialogue Items */
+  .dialogue-section{margin-top:10px;padding-top:10px;border-top:1px dashed var(--ed-border)}
+  .dialogue-item{border:1px solid var(--ed-border);border-radius:6px;padding:10px;margin-bottom:6px;background:#fff}
+  .dialogue-item.him{border-left:3px solid var(--sky)}
+  .dialogue-item.her{border-left:3px solid var(--pink)}
+  .thought-item{border:1px solid var(--ed-border);border-radius:6px;padding:10px;margin-bottom:6px;background:rgba(168,216,234,.06);border-left:3px solid var(--sky-dark)}
+  .dialogue-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .dialogue-header select{width:56px;padding:3px 4px;border:1px solid var(--ed-border);border-radius:4px;font-size:11px;background:var(--ed-bg)}
+  .dialogue-header input{flex:1;padding:3px 8px;border:1px solid var(--ed-border);border-radius:4px;font-size:11px;background:var(--ed-bg)}
+  .dialogue-header input:focus,.dialogue-header select:focus{outline:none;border-color:var(--accent)}
+  .dialogue-footer{display:flex;justify-content:flex-end;gap:2px;margin-top:4px}
+  .dialogue-add-buttons{display:flex;gap:6px;margin-top:8px}
+  /* Format Toolbar */
+  .format-toolbar{display:flex;gap:2px;margin-top:4px}
+  .fmt-btn{padding:2px 6px;font-size:10px;border:1px solid var(--ed-border);border-radius:3px;background:#fff;cursor:pointer;color:var(--ink-light)}
+  .fmt-btn:hover{background:var(--warm-soft)}
+  /* Preview Area */
+  .preview-area{flex:1;overflow-y:auto;background:var(--bg)}
+  .preview-area::-webkit-scrollbar{width:6px}
+  .preview-area::-webkit-scrollbar-thumb{background:#ddd;border-radius:3px}
+  /* Comic Container */
+  .comic-container{max-width:480px;margin:0 auto;padding:0 12px 40px}
+  /* Header */
+  .header{text-align:center;padding:40px 20px 30px;position:relative}
+  .header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 20% 50%,rgba(232,99,111,.08) 0%,transparent 50%),radial-gradient(circle at 80% 30%,rgba(168,216,234,.1) 0%,transparent 50%);pointer-events:none}
+  .header h1{font-family:'Ma Shan Zheng',cursive;font-size:36px;color:var(--accent);letter-spacing:4px;margin-bottom:8px;text-shadow:2px 2px 0 rgba(232,99,111,.15)}
+  .header .subtitle{font-family:'ZCOOL KuaiLe',cursive;font-size:14px;color:var(--ink-light);letter-spacing:2px}
+  .header .deco-line{width:60px;height:3px;background:linear-gradient(90deg,var(--accent),var(--pink));margin:12px auto 0;border-radius:2px}
+  /* Chapter */
+  .chapter{display:flex;align-items:center;gap:12px;margin:32px 0 16px;padding:0 4px}
+  .chapter-num{font-family:'Ma Shan Zheng',cursive;font-size:28px;color:var(--accent);line-height:1;flex-shrink:0}
+  .chapter-line{flex:1;height:2px;background:linear-gradient(90deg,var(--accent-soft),transparent)}
+  .chapter-title{font-family:'ZCOOL KuaiLe',cursive;font-size:16px;color:var(--ink-light);letter-spacing:2px;flex-shrink:0}
+  /* Panels */
+  .panel{background:var(--panel-bg);border:2.5px solid var(--border);border-radius:8px;margin-bottom:16px;overflow:hidden;position:relative;box-shadow:4px 4px 0 rgba(0,0,0,.08)}
+  .panel-art{width:100%;display:block}
+  .panel-caption{padding:10px 14px;font-size:13px;line-height:1.8;color:var(--ink);background:var(--panel-bg);border-top:1.5px dashed rgba(0,0,0,.1)}
+  .panel-caption.narrator{font-style:italic;color:var(--ink-light);font-size:12.5px}
+  /* Dialogue */
+  .dialogue-row{display:flex;gap:10px;padding:14px;align-items:flex-start}
+  .dialogue-row.reverse{flex-direction:row-reverse}
+  .char-avatar{width:40px;height:40px;border-radius:50%;flex-shrink:0;border:2px solid var(--border);overflow:hidden}
+  .char-avatar.him{background:var(--sky)}
+  .char-avatar.her{background:var(--pink)}
+  .bubble-wrap{max-width:75%;position:relative}
+  .bubble-name{font-size:11px;font-weight:700;margin-bottom:4px;color:var(--ink-light)}
+  .bubble-name.her{text-align:right}
+  .bubble{padding:10px 14px;border-radius:16px;font-size:13.5px;line-height:1.7;position:relative;word-break:break-word}
+  .bubble.him{background:var(--bubble);border:1.5px solid #ddd;border-bottom-left-radius:4px}
+  .bubble.her{background:var(--bubble-her);border:1.5px solid var(--pink);border-bottom-right-radius:4px;text-align:right}
+  .bubble .thought{font-size:11px;color:var(--ink-light);font-style:italic;display:block;margin-top:6px}
+  .scene-illustration{width:100%;aspect-ratio:16/10;display:block}
+  .timeline-date{display:inline-flex;align-items:center;gap:6px;background:var(--warm-soft);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;color:#8B7355;margin:10px 14px}
+  .timeline-date::before{content:'';width:6px;height:6px;background:var(--warm);border-radius:50%}
+  .panel.dramatic{border-color:var(--accent);border-width:3px}
+  .panel.romantic{border-color:var(--pink);background:linear-gradient(180deg,#FFF5F7,#FFF)}
+  .panel.rain{background:linear-gradient(180deg,#E8F4F8,#FFF)}
+  .inner-thought{text-align:center;padding:12px 20px;font-size:13px;color:var(--ink-light);font-style:italic;background:rgba(168,216,234,.15);border-left:3px solid var(--sky);margin:0 14px 14px;border-radius:0 8px 8px 0}
+  .end-card{text-align:center;padding:30px 20px;margin-top:20px}
+  .end-card .end-text{font-family:'Ma Shan Zheng',cursive;font-size:22px;color:var(--accent);letter-spacing:3px}
+  .end-card .end-sub{font-size:12px;color:var(--ink-light);margin-top:8px}
+  /* Author Comment */
+  .author-comment{background:#2D2B2A;border-radius:10px;padding:28px 32px;margin:24px 0 0;position:relative;overflow:hidden;border-bottom-left-radius:10px;border-bottom-right-radius:10px;color: #F5E6D3;}
+  .author-comment::before{content:'"';position:absolute;top:8px;left:16px;font-size:52px;font-family:Georgia,serif;color:var(--accent);opacity:.7;line-height:1}
+  .author-comment .comment-body{color:#F5E6D3;font-size:13.5px;line-height:2;white-space:pre-line;padding-left:28px}
+  .author-comment .comment-sig{color:var(--accent-soft);font-size:12px;text-align:right;margin-top:14px;padding-left:28px;font-style:italic}
+  .fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+  .fade-in.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <span class="toolbar-title">漫画生成器</span>
+    <div class="toolbar-actions">
+      <button class="btn btn-secondary btn-sm" onclick="exportConfig()">导出配置</button>
+      <button class="btn btn-primary btn-sm" onclick="exportAsImage()">导出图片</button>
+    </div>
+  </div>
+  <div class="app-layout">
+    <div class="editor-sidebar" id="editorSidebar"></div>
+    <div class="preview-area">
+      <div class="comic-container" id="comicContainer"></div>
+    </div>
+  </div>
+<script>
+// 内置插画库
+const illustrations = {
+  station: `<svg class="scene-illustration" viewBox="0 0 480 300" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="sky1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#A8D8EA;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8F4F8;stop-opacity:1"/></linearGradient><linearGradient id="train" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1"/><stop offset="100%" style="stop-color:#F0F0F0;stop-opacity:1"/></linearGradient></defs><rect width="480" height="300" fill="url(#sky1)"/><ellipse cx="80" cy="60" rx="40" ry="20" fill="white" opacity="0.7"/><ellipse cx="110" cy="55" rx="30" ry="18" fill="white" opacity="0.8"/><ellipse cx="350" cy="80" rx="35" ry="16" fill="white" opacity="0.6"/><rect x="0" y="200" width="480" height="4" fill="#8B7355" rx="2"/><rect x="0" y="210" width="480" height="4" fill="#8B7355" rx="2"/><g fill="#6B5B45"><rect x="30" y="197" width="4" height="20" rx="1"/><rect x="70" y="197" width="4" height="20" rx="1"/><rect x="110" y="197" width="4" height="20" rx="1"/><rect x="150" y="197" width="4" height="20" rx="1"/><rect x="190" y="197" width="4" height="20" rx="1"/><rect x="230" y="197" width="4" height="20" rx="1"/><rect x="270" y="197" width="4" height="20" rx="1"/><rect x="310" y="197" width="4" height="20" rx="1"/><rect x="350" y="197" width="4" height="20" rx="1"/><rect x="390" y="197" width="4" height="20" rx="1"/><rect x="430" y="197" width="4" height="20" rx="1"/></g><g transform="translate(120, 150)"><rect x="0" y="20" width="200" height="45" rx="20" fill="url(#train)" stroke="#ccc" stroke-width="1.5"/><rect x="0" y="30" width="200" height="30" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="20" y="28" width="20" height="18" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><rect x="50" y="28" width="20" height="18" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><rect x="80" y="28" width="20" height="18" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><rect x="110" y="28" width="20" height="18" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><rect x="140" y="28" width="20" height="18" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><path d="M200,20 Q220,20 220,42.5 Q220,65 200,65" fill="white" stroke="#ccc" stroke-width="1.5"/><line x1="-30" y1="35" x2="-5" y2="35" stroke="#E8636F" stroke-width="2" opacity="0.6"/><line x1="-40" y1="45" x2="-8" y2="45" stroke="#E8636F" stroke-width="1.5" opacity="0.4"/><line x1="-25" y1="55" x2="-3" y2="55" stroke="#E8636F" stroke-width="2" opacity="0.5"/></g><g transform="translate(350, 120)"><circle cx="0" cy="0" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="-8" y="-4" width="16" height="8" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1.2"/><line x1="-8" y1="0" x2="-14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><line x1="8" y1="0" x2="14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-10" y="14" width="20" height="30" rx="4" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1.5"/><rect x="-14" y="18" width="6" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><rect x="8" y="18" width="6" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(400, 118)"><circle cx="0" cy="0" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><path d="M-12,-5 Q-15,-18 -5,-18 Q5,-18 8,-12 Q12,-18 15,-10 Q18,-2 12,5 L8,0" fill="#3D3A38" stroke="none"/><rect x="-10" y="14" width="20" height="35" rx="4" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="-14" y="18" width="6" height="20" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/><rect x="8" y="18" width="6" height="20" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="385" y="105" font-size="14" fill="#E8636F" opacity="0.4">♡</text><text x="240" y="280" text-anchor="middle" font-family="'Noto Sans SC', sans-serif" font-size="12" fill="#8B7355" opacity="0.8">2026年1月 · 高铁45分钟的距离</text></svg>`,
+  flower_shop: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#FFF5F7"/><rect x="0" y="180" width="480" height="100" fill="#F5E6D3" opacity="0.5"/><path d="M60,80 L420,80 L430,110 L50,110 Z" fill="#E8636F" opacity="0.8"/><path d="M60,80 L420,80 L425,95 L55,95 Z" fill="#D45560" opacity="0.6"/><path d="M50,110 Q70,120 90,110 Q110,120 130,110 Q150,120 170,110 Q190,120 210,110 Q230,120 250,110 Q270,120 290,110 Q310,120 330,110 Q350,120 370,110 Q390,120 410,110 Q430,120 430,110" fill="none" stroke="#D45560" stroke-width="2"/><rect x="180" y="40" width="120" height="35" rx="6" fill="white" stroke="#E8636F" stroke-width="1.5"/><text x="240" y="63" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="18" fill="#E8636F">花 · 间</text><g transform="translate(200, 140)"><line x1="0" y1="0" x2="-10" y2="50" stroke="#4A7C59" stroke-width="2.5"/><line x1="0" y1="0" x2="5" y2="50" stroke="#4A7C59" stroke-width="2.5"/><line x1="0" y1="0" x2="15" y2="48" stroke="#4A7C59" stroke-width="2.5"/><circle cx="-15" cy="-5" r="12" fill="#E8636F"/><circle cx="-5" cy="-15" r="10" fill="#FFB5C2"/><circle cx="10" cy="-10" r="11" fill="#E8636F"/><circle cx="5" cy="-20" r="9" fill="#FFB5C2"/><circle cx="-10" cy="-20" r="8" fill="#FF8FA0"/><circle cx="-15" cy="-5" r="4" fill="#FFD93D"/><circle cx="10" cy="-10" r="4" fill="#FFD93D"/><circle cx="-5" cy="-15" r="3" fill="#FFD93D"/><path d="M-20,35 Q0,30 20,35 L15,55 Q0,50 -15,55 Z" fill="#F5F5F0" stroke="#ddd" stroke-width="1"/><path d="M-15,55 Q0,48 15,55 L12,65 Q0,60 -12,65 Z" fill="#E8636F" opacity="0.3"/></g><g transform="translate(220, 160)"><circle cx="0" cy="0" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="-8" y="-4" width="16" height="8" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1.2"/><line x1="-8" y1="0" x2="-14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><line x1="8" y1="0" x2="14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><ellipse cx="16" cy="-8" rx="2" ry="3" fill="#A8D8EA" opacity="0.7"/><ellipse cx="20" cy="-2" rx="1.5" ry="2.5" fill="#A8D8EA" opacity="0.5"/><rect x="-10" y="14" width="20" height="28" rx="4" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1.5"/><line x1="-5" y1="42" x2="-15" y2="58" stroke="#2D2B2A" stroke-width="2.5" stroke-linecap="round"/><line x1="5" y1="42" x2="18" y2="55" stroke="#2D2B2A" stroke-width="2.5" stroke-linecap="round"/></g><text x="300" y="145" font-family="'ZCOOL KuaiLe', cursive" font-size="22" fill="#E8636F" transform="rotate(-8, 300, 145)">冲啊！！</text><g transform="translate(30, 200)"><rect x="0" y="10" width="80" height="35" rx="8" fill="#FFD93D" stroke="#2D2B2A" stroke-width="1.5"/><rect x="5" y="5" width="30" height="20" rx="4" fill="#A8D8EA" stroke="#2D2B2A" stroke-width="1"/><circle cx="20" cy="48" r="8" fill="#3D3A38" stroke="#2D2B2A" stroke-width="1.5"/><circle cx="60" cy="48" r="8" fill="#3D3A38" stroke="#2D2B2A" stroke-width="1.5"/><rect x="60" y="15" width="20" height="18" rx="3" fill="#A8D8EA" stroke="#2D2B2A" stroke-width="1"/><rect x="25" y="-2" width="30" height="10" rx="3" fill="white" stroke="#FFD93D" stroke-width="1"/><text x="40" y="7" text-anchor="middle" font-size="7" fill="#E8636F" font-weight="bold">TAXI</text></g><line x1="110" y1="225" x2="135" y2="225" stroke="#E8636F" stroke-width="1.5" opacity="0.4"/><line x1="115" y1="235" x2="140" y2="235" stroke="#E8636F" stroke-width="1" opacity="0.3"/><line x1="110" y1="245" x2="130" y2="245" stroke="#E8636F" stroke-width="1.5" opacity="0.4"/></svg>`,
+  sunset_gate: `<svg class="scene-illustration" viewBox="0 0 480 260" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="sunset" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#FFB347;stop-opacity:0.6"/><stop offset="40%" style="stop-color:#FFD93D;stop-opacity:0.4"/><stop offset="100%" style="stop-color:#A8D8EA;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="260" fill="url(#sunset)"/><rect x="30" y="60" width="60" height="160" rx="2" fill="#E8DDD0" stroke="#C4B5A0" stroke-width="1"/><rect x="100" y="80" width="50" height="140" rx="2" fill="#D4C8B8" stroke="#C4B5A0" stroke-width="1"/><rect x="330" y="50" width="70" height="170" rx="2" fill="#E8DDD0" stroke="#C4B5A0" stroke-width="1"/><rect x="410" y="70" width="50" height="150" rx="2" fill="#D4C8B8" stroke="#C4B5A0" stroke-width="1"/><g fill="#A8D8EA" opacity="0.6"><rect x="40" y="70" width="10" height="12" rx="1"/><rect x="55" y="70" width="10" height="12" rx="1"/><rect x="70" y="70" width="10" height="12" rx="1"/><rect x="40" y="90" width="10" height="12" rx="1"/><rect x="55" y="90" width="10" height="12" rx="1"/><rect x="70" y="90" width="10" height="12" rx="1"/><rect x="40" y="110" width="10" height="12" rx="1"/><rect x="55" y="110" width="10" height="12" rx="1"/><rect x="70" y="110" width="10" height="12" rx="1"/><rect x="340" y="60" width="12" height="14" rx="1"/><rect x="360" y="60" width="12" height="14" rx="1"/><rect x="380" y="60" width="12" height="14" rx="1"/><rect x="340" y="82" width="12" height="14" rx="1"/><rect x="360" y="82" width="12" height="14" rx="1"/><rect x="380" y="82" width="12" height="14" rx="1"/></g><rect x="180" y="140" width="120" height="80" rx="4" fill="#8B7355" opacity="0.3"/><rect x="200" y="150" width="80" height="70" rx="3" fill="#6B5B45" opacity="0.4"/><g transform="translate(220, 170)"><circle cx="0" cy="0" r="11" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1.2"/><line x1="-7" y1="0" x2="-13" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><line x1="7" y1="0" x2="13" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-4,4 Q0,8 4,4" fill="none" stroke="#2D2B2A" stroke-width="1" stroke-linecap="round"/><rect x="-9" y="13" width="18" height="26" rx="4" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1.5"/><circle cx="-18" cy="25" r="8" fill="#E8636F" opacity="0.8"/><circle cx="-22" cy="20" r="6" fill="#FFB5C2" opacity="0.8"/></g><g transform="translate(350, 175)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-4 Q-12,-14 -4,-14 Q4,-14 6,-9 Q9,-14 12,-8 Q14,-1 9,3" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="28" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1.2"/></g><line x1="235" y1="175" x2="340" y2="180" stroke="#E8636F" stroke-width="1" stroke-dasharray="4,4" opacity="0.5"/><text x="280" y="155" font-size="12" fill="#E8636F" opacity="0.5">♡</text><text x="300" y="145" font-size="8" fill="#E8636F" opacity="0.3">♡</text><text x="260" y="150" font-size="10" fill="#E8636F" opacity="0.4">♡</text></svg>`,
+  riverside: `<svg class="scene-illustration" viewBox="0 0 480 260" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="nightsky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#2C3E6B;stop-opacity:1"/><stop offset="100%" style="stop-color:#4A6FA5;stop-opacity:1"/></linearGradient></defs><rect width="480" height="260" fill="url(#nightsky)"/><circle cx="400" cy="50" r="25" fill="#FFD93D" opacity="0.8"/><circle cx="390" cy="45" r="22" fill="url(#nightsky)"/><circle cx="100" cy="30" r="1.5" fill="white" opacity="0.6"/><circle cx="200" cy="50" r="1" fill="white" opacity="0.4"/><circle cx="300" cy="25" r="1.5" fill="white" opacity="0.5"/><circle cx="150" cy="60" r="1" fill="white" opacity="0.3"/><rect x="0" y="160" width="480" height="100" fill="#3A5A80" opacity="0.6"/><line x1="50" y1="175" x2="120" y2="175" stroke="#FFD93D" stroke-width="1" opacity="0.2"/><line x1="200" y1="185" x2="280" y2="185" stroke="#FFD93D" stroke-width="0.8" opacity="0.15"/><line x1="350" y1="170" x2="400" y2="170" stroke="#FFD93D" stroke-width="1" opacity="0.2"/><rect x="0" y="150" width="480" height="15" fill="#4A7C59" opacity="0.4"/><rect x="0" y="130" width="480" height="25" fill="#D4C8B8" opacity="0.3"/><g transform="translate(180, 95)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><line x1="-7" y1="0" x2="-12" y2="0" stroke="#2D2B2A" stroke-width="1"/><line x1="7" y1="0" x2="12" y2="0" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1.2"/><line x1="8" y1="0" x2="40" y2="-30" stroke="#8B7355" stroke-width="1.5"/><path d="M20,-35 Q40,-50 60,-35" fill="#A8D8EA" stroke="#6BB7D0" stroke-width="1" opacity="0.7"/></g><g transform="translate(230, 97)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-13 -4,-13 Q4,-13 6,-8 Q9,-13 12,-7 Q14,0 9,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="28" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1.2"/></g><text x="210" y="108" font-size="10" fill="white" opacity="0.3">···</text><g transform="translate(100, 175)" opacity="0.4"><path d="M0,0 L30,0 L25,10 L5,10 Z" fill="#8B7355"/><line x1="15" y1="0" x2="15" y2="-15" stroke="#6B5B45" stroke-width="1"/></g></svg>`,
+  cinema: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#1A1A2E"/><rect x="60" y="20" width="360" height="180" rx="8" fill="#16213E" stroke="#333" stroke-width="2"/><rect x="70" y="28" width="340" height="164" rx="4" fill="#0F3460"/><circle cx="240" cy="80" r="30" fill="#FFD93D" opacity="0.3"/><line x1="180" y1="100" x2="300" y2="100" stroke="#E8636F" stroke-width="3" opacity="0.6"/><line x1="200" y1="110" x2="280" y2="110" stroke="#E8636F" stroke-width="2" opacity="0.4"/><text x="240" y="150" text-anchor="middle" font-family="'Noto Sans SC', sans-serif" font-size="14" fill="white" opacity="0.5">STAR WARS</text><g fill="#3D3A38"><rect x="80" y="220" width="40" height="25" rx="5"/><rect x="130" y="220" width="40" height="25" rx="5"/><rect x="180" y="220" width="40" height="25" rx="5"/><rect x="230" y="220" width="40" height="25" rx="5"/><rect x="280" y="220" width="40" height="25" rx="5"/><rect x="330" y="220" width="40" height="25" rx="5"/></g><g transform="translate(200, 210)"><circle cx="0" cy="0" r="8" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="18" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><circle cx="-3" cy="-2" r="1" fill="#2D2B2A"/><circle cx="3" cy="-2" r="1" fill="#2D2B2A"/></g><g transform="translate(260, 212)"><circle cx="0" cy="0" r="8" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-7,-3 Q-10,-11 -3,-11 Q3,-11 5,-7 Q7,-11 10,-6 Q12,0 7,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="18" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="265" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="16" fill="#FFD93D" opacity="0.6">只有两个人的包场</text><g transform="translate(230, 225)"><rect x="0" y="0" width="16" height="20" rx="2" fill="#E8636F" opacity="0.7"/><circle cx="4" cy="-2" r="4" fill="#FFD93D" opacity="0.6"/><circle cx="10" cy="-3" r="3.5" fill="#FFD93D" opacity="0.5"/><circle cx="7" cy="-5" r="3" fill="#FFD93D" opacity="0.6"/></g></svg>`,
+  pavilion: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rain" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#6B8CAE;stop-opacity:1"/><stop offset="100%" style="stop-color:#A8C4D8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#rain)"/><g stroke="#A8D8EA" stroke-width="1" opacity="0.4"><line x1="50" y1="0" x2="45" y2="30"/><line x1="120" y1="10" x2="115" y2="40"/><line x1="200" y1="5" x2="195" y2="35"/><line x1="280" y1="15" x2="275" y2="45"/><line x1="350" y1="0" x2="345" y2="30"/><line x1="420" y1="10" x2="415" y2="40"/><line x1="80" y1="50" x2="75" y2="80"/><line x1="160" y1="45" x2="155" y2="75"/><line x1="240" y1="55" x2="235" y2="85"/><line x1="320" y1="40" x2="315" y2="70"/><line x1="400" y1="50" x2="395" y2="80"/><line x1="460" y1="30" x2="455" y2="60"/></g><g transform="translate(140, 60)"><path d="M0,40 L100,0 L200,40 L190,45 L10,45 Z" fill="#8B7355" stroke="#6B5B45" stroke-width="1.5"/><path d="M10,45 L100,8 L190,45" fill="#A0896B" stroke="none"/><rect x="20" y="40" width="6" height="100" fill="#C4B5A0" stroke="#8B7355" stroke-width="1"/><rect x="174" y="40" width="6" height="100" fill="#C4B5A0" stroke="#8B7355" stroke-width="1"/><rect x="30" y="110" width="140" height="8" rx="2" fill="#A0896B" stroke="#8B7355" stroke-width="1"/><rect x="35" y="118" width="4" height="20" fill="#8B7355"/><rect x="161" y="118" width="4" height="20" fill="#8B7355"/><g transform="translate(60, 75)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><line x1="-6" y1="0" x2="-11" y2="0" stroke="#2D2B2A" stroke-width="1"/><line x1="6" y1="0" x2="11" y2="0" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1.2"/><line x1="10" y1="18" x2="25" y2="22" stroke="#FFE0C2" stroke-width="3" stroke-linecap="round"/></g><g transform="translate(120, 77)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-8,-3 Q-10,-12 -3,-12 Q3,-12 5,-7 Q7,-12 10,-6 Q12,0 7,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1.2"/></g></g><rect x="0" y="180" width="480" height="100" fill="#6B8B6B" opacity="0.3"/><ellipse cx="200" cy="220" rx="40" ry="8" fill="#A8D8EA" opacity="0.2"/><ellipse cx="350" cy="240" rx="30" ry="6" fill="#A8D8EA" opacity="0.15"/></svg>`,
+  hand_holding: `<svg class="scene-illustration" viewBox="0 0 480 240" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="240" fill="#FFF5F7"/><g transform="translate(150, 70)"><path d="M60,60 Q70,50 80,55 Q90,60 95,70 Q92,78 85,78 Q78,78 75,72 Q72,66 68,62 Z" fill="#FFE0C2" stroke="#D4B896" stroke-width="1.5"/><path d="M80,55 Q88,48 98,52 Q105,58 102,68" fill="#FFE0C2" stroke="#D4B896" stroke-width="1.5"/><path d="M120,55 Q130,47 140,52 Q148,59 145,69 Q140,75 132,73 Q125,70 122,63 Z" fill="#FFE0D0" stroke="#D4B896" stroke-width="1.5"/><path d="M95,70 Q105,65 115,68 Q120,72 118,78" fill="none" stroke="#D4B896" stroke-width="2" opacity="0.6"/><text x="100" y="50" font-size="14" fill="#FFD93D">✦</text><text x="85" y="42" font-size="10" fill="#E8636F" opacity="0.6">♡</text><text x="125" y="45" font-size="12" fill="#FFD93D" opacity="0.5">✦</text><text x="110" y="38" font-size="8" fill="#E8636F" opacity="0.4">♡</text></g><text x="240" y="180" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="22" fill="#E8636F" opacity="0.5">以后的路一起走吧</text><text x="240" y="205" text-anchor="middle" font-family="'Noto Sans SC', sans-serif" font-size="11" fill="#8B7355" opacity="0.6">这次，她没有挣脱。</text></svg>`,
+  classroom: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="classSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#A8D8EA;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8F4F8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#classSky)"/><rect x="0" y="0" width="480" height="200" fill="#F5E6D3"/><rect x="40" y="40" width="400" height="120" rx="4" fill="white" stroke="#ddd" stroke-width="1.5"/><rect x="50" y="50" width="380" height="100" fill="#87CEEB" opacity="0.3"/><rect x="60" y="180" width="360" height="60" fill="#8B7355" opacity="0.3"/><rect x="80" y="60" width="60" height="40" fill="white" stroke="#ccc" stroke-width="1"/><text x="110" y="85" text-anchor="middle" font-size="10" fill="#333">1-1</text><rect x="160" y="60" width="60" height="40" fill="white" stroke="#ccc" stroke-width="1"/><text x="190" y="85" text-anchor="middle" font-size="10" fill="#333">1-2</text><rect x="260" y="60" width="60" height="40" fill="white" stroke="#ccc" stroke-width="1"/><text x="290" y="85" text-anchor="middle" font-size="10" fill="#333">1-3</text><rect x="360" y="60" width="60" height="40" fill="white" stroke="#ccc" stroke-width="1"/><text x="390" y="85" text-anchor="middle" font-size="10" fill="#333">1-4</text><circle cx="240" cy="130" r="25" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="232" y="127" width="16" height="8" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1.2"/><rect x="220" y="160" width="40" height="30" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><text x="240" y="200" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#8B7355">三尺讲台</text></svg>`,
+  office: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F5F5F5"/><rect x="0" y="200" width="480" height="80" fill="#8B7355" opacity="0.2"/><rect x="20" y="60" width="120" height="80" rx="3" fill="white" stroke="#ddd" stroke-width="1.5"/><rect x="30" y="70" width="100" height="60" fill="#87CEEB" opacity="0.2"/><rect x="25" y="145" width="110" height="8" fill="#C4B5A0"/><rect x="60" y="155" width="40" height="45" fill="#C4B5A0"/><rect x="55" y="200" width="50" height="5" fill="#8B7355"/><rect x="180" y="80" width="100" height="70" rx="3" fill="white" stroke="#ddd" stroke-width="1.5"/><rect x="190" y="90" width="80" height="50" fill="#87CEEB" opacity="0.2"/><rect x="185" y="155" width="90" height="8" fill="#C4B5A0"/><rect x="210" y="165" width="40" height="35" fill="#C4B5A0"/><rect x="340" y="50" width="120" height="90" rx="3" fill="white" stroke="#ddd" stroke-width="1.5"/><rect x="350" y="60" width="100" height="70" fill="#333" opacity="0.8"/><rect x="360" y="70" width="80" height="50" fill="#1a1a2e"/><text x="400" y="100" text-anchor="middle" font-size="8" fill="#5B8DB8">code...</text><rect x="345" y="145" width="110" height="8" fill="#C4B5A0"/><circle cx="400" cy="165" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="393" y="162" width="14" height="6" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="390" y="180" width="20" height="25" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><text x="400" y="200" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="12" fill="#8B7355">加班中...</text></svg>`,
+  home: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#FFF8F0"/><rect x="0" y="180" width="480" height="100" fill="#F5E6D3" opacity="0.5"/><rect x="30" y="80" width="180" height="120" rx="4" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1.5"/><rect x="40" y="90" width="160" height="80" fill="#87CEEB" opacity="0.2"/><rect x="50" y="100" width="40" height="30" fill="#87CEEB" opacity="0.3" stroke="#ccc" stroke-width="1"/><rect x="100" y="100" width="40" height="30" fill="#87CEEB" opacity="0.3" stroke="#ccc" stroke-width="1"/><rect x="150" y="100" width="40" height="30" fill="#87CEEB" opacity="0.3" stroke="#ccc" stroke-width="1"/><rect x="35" y="175" width="170" height="25" fill="#C4B5A0"/><rect x="90" y="155" width="60" height="20" rx="10" fill="#E8636F" opacity="0.3"/><rect x="250" y="60" width="200" height="150" rx="4" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1.5"/><rect x="270" y="80" width="70" height="50" fill="#333" opacity="0.8"/><rect x="360" y="80" width="70" height="50" fill="#87CEEB" opacity="0.2"/><rect x="260" y="140" width="180" height="60" fill="#F5E6D3" opacity="0.5"/><rect x="280" y="150" width="60" height="40" rx="3" fill="#C4B5A0"/><circle cx="400" cy="170" r="15" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M393,167 Q400,160 407,167" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="393" y="188" width="14" height="20" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/><text x="350" y="220" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="14" fill="#8B7355">家的温暖</text></svg>`,
+  supermarket: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F8F8F8"/><rect x="0" y="200" width="480" height="80" fill="#E8E8E8"/><rect x="30" y="40" width="100" height="160" rx="3" fill="#FFB5C2" opacity="0.3" stroke="#ddd" stroke-width="1"/><rect x="40" y="50" width="80" height="25" fill="#FFB5C2" opacity="0.5"/><rect x="40" y="85" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="40" y="120" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="40" y="155" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="150" y="40" width="100" height="160" rx="3" fill="#A8D8EA" opacity="0.3" stroke="#ddd" stroke-width="1"/><rect x="160" y="50" width="80" height="25" fill="#A8D8EA" opacity="0.5"/><rect x="160" y="85" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="160" y="120" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="160" y="155" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="270" y="40" width="100" height="160" rx="3" fill="#FFD93D" opacity="0.3" stroke="#ddd" stroke-width="1"/><rect x="280" y="50" width="80" height="25" fill="#FFD93D" opacity="0.5"/><rect x="280" y="85" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="280" y="120" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="280" y="155" width="80" height="25" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="390" y="40" width="60" height="160" rx="3" fill="#4A7C59" opacity="0.2" stroke="#ddd" stroke-width="1"/><circle cx="420" cy="80" r="15" fill="#E8636F" opacity="0.6"/><circle cx="420" cy="120" r="12" fill="#FFD93D" opacity="0.6"/><circle cx="420" cy="155" r="10" fill="#4A7C59" opacity="0.6"/><circle cx="420" cy="185" r="8" fill="#A8D8EA" opacity="0.6"/><g transform="translate(200, 210)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><rect x="10" y="5" width="20" height="25" rx="2" fill="#F5E6D3" stroke="#ddd" stroke-width="0.5"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#8B7355">一起逛超市</text></svg>`,
+  park: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="parkSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#A8D8EA;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8F4F8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#parkSky)"/><rect x="0" y="180" width="480" height="100" fill="#4A7C59" opacity="0.3"/><ellipse cx="80" cy="190" rx="50" ry="20" fill="#4A7C59" opacity="0.4"/><ellipse cx="400" cy="185" rx="60" ry="25" fill="#4A7C59" opacity="0.4"/><rect x="75" y="120" width="10" height="80" fill="#8B7355"/><ellipse cx="80" cy="100" rx="45" ry="40" fill="#4A7C59"/><ellipse cx="80" cy="95" rx="35" ry="30" fill="#5A8D69"/><rect x="200" y="140" width="8" height="60" fill="#8B7355"/><ellipse cx="204" cy="125" rx="35" ry="30" fill="#4A7C59"/><ellipse cx="204" cy="120" rx="28" ry="22" fill="#5A8D69"/><rect x="395" y="100" width="10" height="100" fill="#8B7355"/><ellipse cx="400" cy="75" rx="55" ry="50" fill="#4A7C59"/><ellipse cx="400" cy="68" rx="42" ry="38" fill="#5A8D69"/><rect x="0" y="220" width="480" height="8" fill="#C4B5A0"/><rect x="120" y="200" width="80" height="30" rx="3" fill="#E8DDD0" stroke="#C4B5A0" stroke-width="1"/><rect x="280" y="195" width="80" height="35" rx="3" fill="#E8DDD0" stroke="#C4B5A0" stroke-width="1"/><g transform="translate(200, 180)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(250, 182)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-8,-3 Q-10,-10 -3,-10 Q3,-10 5,-6 Q7,-10 9,-5 Q11,0 7,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="20" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#4A7C59">公园漫步</text></svg>`,
+  restaurant: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#FFF8F0"/><rect x="0" y="0" width="480" height="60" fill="#E8636F" opacity="0.8"/><rect x="200" y="20" width="80" height="30" rx="4" fill="white"/><text x="240" y="42" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#E8636F">美食</text><rect x="0" y="60" width="480" height="160" fill="#F5E6D3" opacity="0.3"/><rect x="40" y="80" width="100" height="120" rx="4" fill="white" stroke="#E8DDD0" stroke-width="1.5"/><rect x="55" y="95" width="70" height="50" fill="#FFB5C2" opacity="0.3"/><circle cx="90" cy="120" r="15" fill="#E8636F" opacity="0.5"/><rect x="50" y="155" width="80" height="8" fill="#C4B5A0"/><rect x="160" y="80" width="100" height="120" rx="4" fill="white" stroke="#E8DDD0" stroke-width="1.5"/><rect x="175" y="95" width="70" height="50" fill="#FFD93D" opacity="0.3"/><rect x="185" y="105" width="50" height="30" rx="2" fill="#F5E6D3"/><rect x="170" y="155" width="80" height="8" fill="#C4B5A0"/><rect x="280" y="80" width="100" height="120" rx="4" fill="white" stroke="#E8DDD0" stroke-width="1.5"/><rect x="295" y="95" width="70" height="50" fill="#A8D8EA" opacity="0.3"/><ellipse cx="330" cy="120" rx="20" ry="15" fill="#4A7C59" opacity="0.5"/><rect x="290" y="155" width="80" height="8" fill="#C4B5A0"/><rect x="400" y="80" width="60" height="120" rx="4" fill="white" stroke="#E8DDD0" stroke-width="1.5"/><rect x="410" y="100" width="40" height="60" fill="#87CEEB" opacity="0.2"/><rect x="410" y="165" width="40" height="8" fill="#C4B5A0"/><g transform="translate(200, 210)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#E8636F">烛光晚餐</text></svg>`,
+  airport: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="airSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#87CEEB;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8F4F8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#airSky)"/><ellipse cx="100" cy="50" rx="60" ry="25" fill="white" opacity="0.8"/><ellipse cx="350" cy="40" rx="50" ry="20" fill="white" opacity="0.6"/><rect x="0" y="150" width="480" height="130" fill="#E8E8E8"/><rect x="50" y="170" width="380" height="60" fill="#D0D0D0" stroke="#C0C0C0" stroke-width="1"/><rect x="80" y="180" width="40" height="40" fill="#87CEEB" opacity="0.4" stroke="#aaa" stroke-width="0.5"/><rect x="140" y="180" width="40" height="40" fill="#87CEEB" opacity="0.4" stroke="#aaa" stroke-width="0.5"/><rect x="200" y="180" width="40" height="40" fill="#87CEEB" opacity="0.4" stroke="#aaa" stroke-width="0.5"/><rect x="260" y="180" width="40" height="40" fill="#87CEEB" opacity="0.4" stroke="#aaa" stroke-width="0.5"/><rect x="320" y="180" width="40" height="40" fill="#87CEEB" opacity="0.4" stroke="#aaa" stroke-width="0.5"/><text x="100" y="205" text-anchor="middle" font-size="8" fill="#666">A1</text><text x="160" y="205" text-anchor="middle" font-size="8" fill="#666">A2</text><text x="220" y="205" text-anchor="middle" font-size="8" fill="#666">A3</text><rect x="0" y="240" width="480" height="40" fill="#8B7355" opacity="0.3"/><g transform="translate(150, 100)"><path d="M-40,20 L0,-30 L40,20 L35,25 L0,-20 L-35,25 Z" fill="#E8E8E8" stroke="#ccc" stroke-width="1.5"/><rect x="-8" y="20" width="16" height="25" rx="2" fill="#87CEEB" opacity="0.5" stroke="#aaa" stroke-width="1"/><circle cx="-20" cy="30" r="4" fill="#333" opacity="0.6"/><circle cx="20" cy="30" r="4" fill="#333" opacity="0.6"/></g><g transform="translate(280, 95)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><line x1="-7" y1="0" x2="-12" y2="0" stroke="#2D2B2A" stroke-width="1"/><line x1="7" y1="0" x2="12" y2="0" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1.2"/><rect x="15" y="5" width="25" height="20" rx="2" fill="#E8636F" opacity="0.6"/></g><text x="240" y="265" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#8B7355">下一次见面</text></svg>`,
+  beach: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ocean" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#87CEEB;stop-opacity:1"/><stop offset="100%" style="stop-color:#4A90A4;stop-opacity:1"/></linearGradient><linearGradient id="sand" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#F5E6C8;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8D4A8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#ocean)"/><ellipse cx="400" cy="50" rx="35" ry="35" fill="#FFD93D" opacity="0.9"/><ellipse cx="400" cy="50" rx="30" ry="30" fill="#FFF5E0"/><ellipse cx="100" cy="40" rx="50" ry="20" fill="white" opacity="0.7"/><ellipse cx="80" cy="35" rx="30" ry="15" fill="white" opacity="0.8"/><path d="M0,150 Q120,140 240,150 Q360,160 480,150 L480,200 Q360,210 240,200 Q120,190 0,200 Z" fill="url(#sand)"/><ellipse cx="240" cy="220" rx="200" ry="30" fill="#E8D4A8" opacity="0.5"/><g transform="translate(120, 180)"><circle cx="0" cy="0" r="8" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-6,-2 Q-8,-10 -2,-10 Q2,-10 4,-6 Q6,-10 8,-4 Q10,2 6,5" fill="#3D3A38"/><rect x="-6" y="10" width="12" height="18" rx="2" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="0.8"/></g><g transform="translate(180, 175)"><circle cx="0" cy="0" r="8" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-5" y="-2" width="10" height="5" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="0.8"/><rect x="-6" y="10" width="12" height="18" rx="2" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="0.8"/></g><g transform="translate(320, 160)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-8,-3 Q-12,-12 -3,-12 Q3,-12 5,-7 Q7,-12 10,-5 Q12,3 7,6" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><path d="M350,190 Q360,170 380,185 Q390,195 400,180 Q410,165 430,185" fill="none" stroke="#8B7355" stroke-width="2" opacity="0.4"/><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="18" fill="#4A7C59">海边约定</text></svg>`,
+  cafe: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F5E6D3" opacity="0.3"/><rect x="0" y="0" width="480" height="60" fill="#6B5B45" opacity="0.8"/><rect x="150" y="15" width="180" height="35" rx="4" fill="#8B7355"/><text x="240" y="40" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="18" fill="white">Coffee Time</text><rect x="30" y="80" width="180" height="160" rx="4" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1.5"/><rect x="50" y="100" width="60" height="80" rx="3" fill="#D4A574" opacity="0.3"/><ellipse cx="80" cy="160" rx="25" ry="10" fill="#8B7355" opacity="0.4"/><path d="M60,140 Q70,130 80,140 Q90,150 100,140 Q110,130 120,140" fill="none" stroke="#8B7355" stroke-width="1.5" opacity="0.5"/><rect x="40" y="190" width="160" height="8" fill="#C4B5A0"/><rect x="130" y="200" width="50" height="30" rx="2" fill="#F5E6D3"/><circle cx="155" cy="215" r="8" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="250" y="80" width="200" height="160" rx="4" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1.5"/><rect x="270" y="100" width="80" height="60" rx="3" fill="#A8D8EA" opacity="0.2"/><rect x="270" y="170" width="80" height="60" rx="3" fill="#FFB5C2" opacity="0.2"/><rect x="370" y="100" width="60" height="130" rx="3" fill="#F5E6D3" opacity="0.3"/><rect x="260" y="190" width="180" height="8" fill="#C4B5A0"/><g transform="translate(300, 180)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(350, 175)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-8,-3 Q-12,-12 -3,-12 Q3,-12 5,-7 Q7,-12 10,-5 Q12,3 7,6" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="265" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#6B5B45">咖啡馆约会</text></svg>`,
+  library: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="libSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#E8E4E0;stop-opacity:1"/><stop offset="100%" style="stop-color:#F5F0EB;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#libSky)"/><rect x="0" y="200" width="480" height="80" fill="#8B7355" opacity="0.2"/><rect x="30" y="40" width="120" height="160" rx="3" fill="#E8636F" opacity="0.1" stroke="#ddd" stroke-width="1"/><rect x="35" y="50" width="110" height="20" fill="#E8636F" opacity="0.3"/><rect x="35" y="80" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="35" y="105" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="35" y="130" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="35" y="155" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="170" y="40" width="120" height="160" rx="3" fill="#A8D8EA" opacity="0.1" stroke="#ddd" stroke-width="1"/><rect x="175" y="50" width="110" height="20" fill="#A8D8EA" opacity="0.3"/><rect x="175" y="80" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="175" y="105" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="175" y="130" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="175" y="155" width="110" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="310" y="40" width="150" height="160" rx="3" fill="#FFD93D" opacity="0.1" stroke="#ddd" stroke-width="1"/><rect x="315" y="50" width="140" height="20" fill="#FFD93D" opacity="0.3"/><rect x="315" y="80" width="140" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="315" y="105" width="140" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="315" y="130" width="140" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="315" y="155" width="140" height="15" fill="white" stroke="#ddd" stroke-width="0.5"/><rect x="50" y="210" width="380" height="40" rx="3" fill="#E8DDD0" opacity="0.5"/><g transform="translate(200, 190)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><rect x="12" y="5" width="15" height="20" rx="1" fill="#4A7C59" opacity="0.6"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#8B7355">安静的书房</text></svg>`,
+  mountain: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="mtnSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#FFB347;stop-opacity:0.4"/><stop offset="50%" style="stop-color:#FFD93D;stop-opacity:0.3"/><stop offset="100%" style="stop-color:#A8D8EA;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="280" fill="url(#mtnSky)"/><ellipse cx="380" cy="50" rx="40" ry="25" fill="#FFD93D" opacity="0.6"/><path d="M0,280 L80,100 L150,180 L220,60 L300,160 L380,80 L450,140 L480,120 L480,280 Z" fill="#4A7C59" opacity="0.6"/><path d="M0,280 L60,140 L120,200 L180,100 L260,180 L340,90 L420,170 L480,130 L480,280 Z" fill="#5A8D69" opacity="0.5"/><path d="M0,280 L100,160 L180,220 L280,140 L380,200 L480,160 L480,280 Z" fill="#6A9D79" opacity="0.4"/><rect x="0" y="240" width="480" height="40" fill="#4A7C59" opacity="0.3"/><ellipse cx="150" cy="250" rx="80" ry="20" fill="#5A8D69" opacity="0.3"/><ellipse cx="350" cy="255" rx="100" ry="25" fill="#5A8D69" opacity="0.3"/><g transform="translate(200, 200)"><circle cx="0" cy="0" r="8" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-5" y="-2" width="10" height="5" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="0.8"/><rect x="-6" y="10" width="12" height="18" rx="2" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="0.8"/></g><g transform="translate(240, 195)"><circle cx="0" cy="0" r="8" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-6,-2 Q-8,-10 -2,-10 Q2,-10 4,-6 Q6,-10 8,-4 Q10,2 6,5" fill="#3D3A38"/><rect x="-6" y="10" width="12" height="18" rx="2" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="0.8"/></g><text x="240" y="270" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="18" fill="#4A7C59">一起看日出</text></svg>`,
+  street: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F5E6D3" opacity="0.3"/><rect x="0" y="200" width="480" height="80" fill="#C4B5A0" opacity="0.3"/><rect x="20" y="60" width="80" height="150" rx="3" fill="#FFE0E6" stroke="#E8DDD0" stroke-width="1"/><rect x="30" y="70" width="25" height="30" rx="2" fill="#A8D8EA" opacity="0.4" stroke="#ccc" stroke-width="0.5"/><rect x="65" y="70" width="25" height="30" rx="2" fill="#A8D8EA" opacity="0.4" stroke="#ccc" stroke-width="0.5"/><rect x="30" y="115" width="25" height="30" rx="2" fill="#A8D8EA" opacity="0.4" stroke="#ccc" stroke-width="0.5"/><rect x="65" y="115" width="25" height="30" rx="2" fill="#A8D8EA" opacity="0.4" stroke="#ccc" stroke-width="0.5"/><rect x="120" y="40" width="100" height="170" rx="3" fill="#FFF8F0" stroke="#E8DDD0" stroke-width="1"/><rect x="130" y="50" width="35" height="50" rx="2" fill="#FFB5C2" opacity="0.3"/><rect x="175" y="50" width="35" height="50" rx="2" fill="#FFD93D" opacity="0.3"/><rect x="130" y="115" width="35" height="50" rx="2" fill="#A8D8EA" opacity="0.3"/><rect x="175" y="115" width="35" height="50" rx="2" fill="#E8636F" opacity="0.2"/><rect x="240" y="70" width="90" height="140" rx="3" fill="#FFF5F0" stroke="#E8DDD0" stroke-width="1"/><rect x="250" y="80" width="30" height="40" rx="2" fill="#4A7C59" opacity="0.3"/><rect x="290" y="80" width="30" height="40" rx="2" fill="#FFB5C2" opacity="0.3"/><rect x="250" y="135" width="70" height="30" rx="2" fill="#FFE0E6" opacity="0.4"/><rect x="350" y="50" width="110" height="160" rx="3" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1"/><rect x="360" y="60" width="40" height="45" rx="2" fill="#87CEEB" opacity="0.3"/><rect x="410" y="60" width="40" height="45" rx="2" fill="#FFD93D" opacity="0.3"/><rect x="360" y="120" width="40" height="40" rx="2" fill="#E8636F" opacity="0.2"/><rect x="410" y="120" width="40" height="40" rx="2" fill="#A8D8EA" opacity="0.3"/><g transform="translate(220, 190)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><rect x="8" y="12" width="10" height="14" rx="2" fill="#FFB5C2" opacity="0.5" stroke="#2D2B2A" stroke-width="0.5"/></g><g transform="translate(270, 188)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-8,-3 Q-10,-10 -3,-10 Q3,-10 5,-6 Q7,-10 9,-5 Q11,0 7,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="22" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-14" y="12" width="8" height="12" rx="2" fill="#5B8DB8" opacity="0.5" stroke="#2D2B2A" stroke-width="0.5"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#8B7355">逛街约会</text></svg>`,
+  subway: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#E8E8E8"/><rect x="0" y="40" width="480" height="180" fill="#F0F0F0"/><rect x="60" y="50" width="360" height="160" rx="8" fill="#D0D0D0" stroke="#aaa" stroke-width="2"/><rect x="70" y="58" width="340" height="144" rx="4" fill="#E8E8E8"/><rect x="80" y="65" width="60" height="50" rx="3" fill="#87CEEB" opacity="0.4" stroke="#999" stroke-width="0.5"/><rect x="155" y="65" width="60" height="50" rx="3" fill="#87CEEB" opacity="0.4" stroke="#999" stroke-width="0.5"/><rect x="230" y="65" width="60" height="50" rx="3" fill="#87CEEB" opacity="0.4" stroke="#999" stroke-width="0.5"/><rect x="305" y="65" width="60" height="50" rx="3" fill="#87CEEB" opacity="0.4" stroke="#999" stroke-width="0.5"/><g fill="#4A6FA5" opacity="0.6"><rect x="90" y="130" width="40" height="12" rx="2"/><rect x="140" y="130" width="40" height="12" rx="2"/><rect x="200" y="130" width="40" height="12" rx="2"/><rect x="260" y="130" width="40" height="12" rx="2"/><rect x="320" y="130" width="40" height="12" rx="2"/></g><rect x="0" y="220" width="480" height="60" fill="#C4B5A0" opacity="0.4"/><rect x="100" y="190" width="40" height="40" rx="3" fill="#A8D8EA" opacity="0.3" stroke="#999" stroke-width="0.5"/><rect x="180" y="190" width="40" height="40" rx="3" fill="#FFB5C2" opacity="0.3" stroke="#999" stroke-width="0.5"/><g transform="translate(300, 180)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(340, 178)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-7,-2 Q-9,-9 -3,-9 Q3,-9 4,-5 Q6,-9 8,-4 Q9,0 6,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="22" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#4A6FA5">拥挤的地铁</text></svg>`,
+  hospital: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F0F5FF"/><rect x="0" y="200" width="480" height="80" fill="#E0E8F0" opacity="0.5"/><rect x="100" y="40" width="280" height="170" rx="4" fill="white" stroke="#B0C4DE" stroke-width="2"/><rect x="200" y="10" width="80" height="40" rx="3" fill="#E8636F" opacity="0.8"/><rect x="230" y="15" width="20" height="30" fill="white"/><rect x="215" y="22" width="50" height="14" fill="white"/><rect x="120" y="60" width="50" height="40" rx="2" fill="#A8D8EA" opacity="0.3" stroke="#B0C4DE" stroke-width="0.5"/><rect x="190" y="60" width="50" height="40" rx="2" fill="#A8D8EA" opacity="0.3" stroke="#B0C4DE" stroke-width="0.5"/><rect x="260" y="60" width="50" height="40" rx="2" fill="#A8D8EA" opacity="0.3" stroke="#B0C4DE" stroke-width="0.5"/><rect x="330" y="60" width="30" height="40" rx="2" fill="#87CEEB" opacity="0.3" stroke="#B0C4DE" stroke-width="0.5"/><g transform="translate(220, 170)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(260, 172)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-7,-2 Q-9,-9 -3,-9 Q3,-9 4,-5 Q6,-9 8,-4 Q9,0 6,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="22" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#4A6FA5">医院探望</text></svg>`,
+  wedding: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wedSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#FFE8EC;stop-opacity:1"/><stop offset="100%" style="stop-color:#FFF5F7;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#wedSky)"/><ellipse cx="240" cy="120" rx="120" ry="80" fill="#FFE0E6" opacity="0.3"/><path d="M180,50 Q240,20 300,50 L290,55 Q240,30 190,55 Z" fill="#FFD93D" opacity="0.6"/><circle cx="240" cy="80" r="3" fill="#FFD93D" opacity="0.8"/><circle cx="220" cy="70" r="2" fill="#FFD93D" opacity="0.5"/><circle cx="260" cy="70" r="2" fill="#FFD93D" opacity="0.5"/><g transform="translate(210, 120)"><circle cx="0" cy="0" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="-8" y="-4" width="16" height="8" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1.2"/><line x1="-8" y1="0" x2="-14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><line x1="8" y1="0" x2="14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-10" y="14" width="20" height="35" rx="4" fill="#2D2B2A" stroke="#2D2B2A" stroke-width="1.5"/></g><g transform="translate(270, 118)"><circle cx="0" cy="0" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><path d="M-12,-5 Q-15,-18 -5,-18 Q5,-18 8,-12 Q12,-18 15,-10 Q18,-2 12,5 L8,0" fill="#3D3A38"/><path d="M-18,15 Q0,5 18,15 L15,50 Q0,45 -15,50 Z" fill="white" stroke="#E8DDD0" stroke-width="1"/><circle cx="-12" cy="8" r="4" fill="#FFE0E6" stroke="#E8DDD0" stroke-width="0.5"/></g><line x1="225" y1="130" x2="255" y2="128" stroke="#E8636F" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/><text x="240" y="140" font-size="10" fill="#E8636F" opacity="0.5">♡</text><g fill="#FFD93D" opacity="0.6"><circle cx="100" cy="60" r="3"/><circle cx="380" cy="50" r="3"/><circle cx="150" cy="100" r="2"/><circle cx="330" cy="90" r="2"/><circle cx="80" cy="140" r="2"/><circle cx="400" cy="130" r="2"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="20" fill="#E8636F" opacity="0.7">执子之手</text></svg>`,
+  night_street: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="nsSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#1A1A3E;stop-opacity:1"/><stop offset="100%" style="stop-color:#2C3E6B;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#nsSky)"/><circle cx="380" cy="40" r="20" fill="#FFD93D" opacity="0.7"/><circle cx="374" cy="36" r="17" fill="#1A1A3E"/><circle cx="80" cy="30" r="1" fill="white" opacity="0.5"/><circle cx="180" cy="50" r="1" fill="white" opacity="0.3"/><circle cx="300" cy="25" r="1.5" fill="white" opacity="0.6"/><circle cx="420" cy="55" r="1" fill="white" opacity="0.4"/><rect x="30" y="80" width="80" height="130" rx="2" fill="#1A1A3E" stroke="#333" stroke-width="1"/><rect x="40" y="90" width="20" height="25" rx="1" fill="#FFD93D" opacity="0.4"/><rect x="70" y="90" width="20" height="25" rx="1" fill="#FFD93D" opacity="0.3"/><rect x="40" y="130" width="20" height="25" rx="1" fill="#87CEEB" opacity="0.3"/><rect x="70" y="130" width="20" height="25" rx="1" fill="#FFD93D" opacity="0.2"/><rect x="130" y="60" width="90" height="150" rx="2" fill="#1A1A3E" stroke="#333" stroke-width="1"/><rect x="140" y="75" width="30" height="35" rx="1" fill="#FFB5C2" opacity="0.3"/><rect x="180" y="75" width="30" height="35" rx="1" fill="#FFD93D" opacity="0.4"/><rect x="140" y="125" width="30" height="35" rx="1" fill="#A8D8EA" opacity="0.3"/><rect x="180" y="125" width="30" height="35" rx="1" fill="#FFD93D" opacity="0.2"/><rect x="240" y="90" width="80" height="120" rx="2" fill="#1A1A3E" stroke="#333" stroke-width="1"/><rect x="250" y="100" width="25" height="30" rx="1" fill="#87CEEB" opacity="0.3"/><rect x="285" y="100" width="25" height="30" rx="1" fill="#FFD93D" opacity="0.3"/><rect x="350" y="70" width="100" height="140" rx="2" fill="#1A1A3E" stroke="#333" stroke-width="1"/><rect x="360" y="80" width="35" height="40" rx="1" fill="#E8636F" opacity="0.3"/><rect x="405" y="80" width="35" height="40" rx="1" fill="#FFD93D" opacity="0.4"/><rect x="0" y="210" width="480" height="70" fill="#1A1A3E" opacity="0.5"/><rect x="0" y="210" width="480" height="2" fill="#FFD93D" opacity="0.2"/><g transform="translate(180, 200)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(220, 202)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="26" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#FFD93D" opacity="0.6">夜色温柔</text></svg>`,
+  balcony: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="balSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#FF9A76;stop-opacity:0.5"/><stop offset="50%" style="stop-color:#FFD93D;stop-opacity:0.4"/><stop offset="100%" style="stop-color:#A8D8EA;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="280" fill="url(#balSky)"/><rect x="0" y="160" width="480" height="120" fill="#E8DDD0" opacity="0.5"/><rect x="0" y="150" width="480" height="15" fill="#8B7355" opacity="0.4"/><rect x="50" y="100" width="6" height="60" fill="#8B7355"/><rect x="424" y="100" width="6" height="60" fill="#8B7355"/><g fill="#8B7355"><rect x="50" y="100" width="380" height="4" rx="1"/><rect x="50" y="130" width="380" height="3" rx="1"/><rect x="90" y="100" width="3" height="60" opacity="0.5"/><rect x="130" y="100" width="3" height="60" opacity="0.5"/><rect x="170" y="100" width="3" height="60" opacity="0.5"/><rect x="210" y="100" width="3" height="60" opacity="0.5"/><rect x="250" y="100" width="3" height="60" opacity="0.5"/><rect x="290" y="100" width="3" height="60" opacity="0.5"/><rect x="330" y="100" width="3" height="60" opacity="0.5"/><rect x="370" y="100" width="3" height="60" opacity="0.5"/></g><g transform="translate(200, 135)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(240, 137)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(340, 130)"><rect x="-15" y="0" width="30" height="30" rx="3" fill="#4A7C59" opacity="0.5"/><circle cx="-5" cy="-8" r="6" fill="#E8636F" opacity="0.6"/><circle cx="8" cy="-5" r="5" fill="#FFB5C2" opacity="0.7"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#8B7355">阳台吹风</text></svg>`,
+  kitchen: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#FFF8F0"/><rect x="0" y="200" width="480" height="80" fill="#E8DDD0" opacity="0.4"/><rect x="20" y="40" width="200" height="170" rx="4" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1.5"/><rect x="30" y="50" width="180" height="80" fill="#87CEEB" opacity="0.15"/><rect x="40" y="60" width="50" height="40" rx="2" fill="#87CEEB" opacity="0.2" stroke="#ccc" stroke-width="0.5"/><rect x="100" y="60" width="50" height="40" rx="2" fill="#87CEEB" opacity="0.2" stroke="#ccc" stroke-width="0.5"/><rect x="160" y="60" width="40" height="40" rx="2" fill="#87CEEB" opacity="0.2" stroke="#ccc" stroke-width="0.5"/><rect x="25" y="140" width="190" height="8" fill="#C4B5A0"/><rect x="40" y="148" width="20" height="40" rx="2" fill="#4A7C59" opacity="0.3"/><rect x="70" y="148" width="20" height="40" rx="2" fill="#FFB5C2" opacity="0.3"/><rect x="100" y="148" width="20" height="40" rx="2" fill="#FFD93D" opacity="0.3"/><rect x="130" y="148" width="20" height="40" rx="2" fill="#E8636F" opacity="0.2"/><rect x="250" y="30" width="210" height="180" rx="4" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1.5"/><rect x="260" y="40" width="90" height="60" rx="3" fill="#F5E6D3" opacity="0.5"/><rect x="370" y="40" width="80" height="60" rx="3" fill="#F5E6D3" opacity="0.5"/><rect x="265" y="50" width="15" height="25" rx="1" fill="#A8D8EA" opacity="0.3"/><rect x="290" y="50" width="15" height="25" rx="1" fill="#A8D8EA" opacity="0.3"/><rect x="315" y="50" width="15" height="25" rx="1" fill="#A8D8EA" opacity="0.3"/><rect x="375" y="50" width="15" height="25" rx="1" fill="#A8D8EA" opacity="0.3"/><rect x="400" y="50" width="15" height="25" rx="1" fill="#A8D8EA" opacity="0.3"/><rect x="425" y="50" width="15" height="25" rx="1" fill="#A8D8EA" opacity="0.3"/><rect x="260" y="120" width="190" height="8" fill="#C4B5A0"/><g transform="translate(300, 180)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(380, 175)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="14" fill="#8B7355">一起做饭</text></svg>`,
+  rain_scene: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rainBg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#6B8CAE;stop-opacity:1"/><stop offset="100%" style="stop-color:#8BAAC8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#rainBg)"/><g stroke="#A8D8EA" stroke-width="1" opacity="0.5"><line x1="40" y1="0" x2="35" y2="25"/><line x1="100" y1="10" x2="95" y2="35"/><line x1="170" y1="5" x2="165" y2="30"/><line x1="240" y1="0" x2="235" y2="25"/><line x1="310" y1="15" x2="305" y2="40"/><line x1="380" y1="5" x2="375" y2="30"/><line x1="440" y1="10" x2="435" y2="35"/><line x1="60" y1="50" x2="55" y2="75"/><line x1="130" y1="45" x2="125" y2="70"/><line x1="200" y1="55" x2="195" y2="80"/><line x1="270" y1="40" x2="265" y2="65"/><line x1="340" y1="50" x2="335" y2="75"/><line x1="410" y1="45" x2="405" y2="70"/><line x1="90" y1="90" x2="85" y2="115"/><line x1="180" y1="85" x2="175" y2="110"/><line x1="260" y1="95" x2="255" y2="120"/><line x1="350" y1="80" x2="345" y2="105"/><line x1="430" y1="90" x2="425" y2="115"/></g><rect x="0" y="200" width="480" height="80" fill="#6B8B6B" opacity="0.3"/><ellipse cx="150" cy="220" rx="30" ry="5" fill="#A8D8EA" opacity="0.2"/><ellipse cx="330" cy="230" rx="25" ry="4" fill="#A8D8EA" opacity="0.15"/><g transform="translate(200, 160)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><path d="M-12,0 Q-20,-15 -8,-18 Q0,-20 8,-15 Q12,-10 12,0" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1" opacity="0.8"/></g><g transform="translate(260, 162)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="26" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#A8D8EA" opacity="0.7">雨中漫步</text></svg>`,
+  bridge: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="brSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#FFB347;stop-opacity:0.4"/><stop offset="100%" style="stop-color:#A8D8EA;stop-opacity:0.5"/></linearGradient></defs><rect width="480" height="280" fill="url(#brSky)"/><rect x="0" y="180" width="480" height="100" fill="#4A90A4" opacity="0.3"/><path d="M0,180 Q120,160 240,180 Q360,200 480,180" fill="none" stroke="#4A90A4" stroke-width="1" opacity="0.4"/><path d="M0,140 L240,100 L480,140 L480,180 L0,180 Z" fill="#8B7355" opacity="0.6"/><path d="M0,145 L240,105 L480,145" fill="none" stroke="#6B5B45" stroke-width="2"/><g fill="#8B7355"><rect x="60" y="110" width="6" height="70"/><rect x="120" y="100" width="6" height="80"/><rect x="180" y="105" width="6" height="75"/><rect x="300" y="105" width="6" height="75"/><rect x="360" y="100" width="6" height="80"/><rect x="420" y="110" width="6" height="70"/></g><rect x="0" y="140" width="480" height="5" fill="#6B5B45" opacity="0.5"/><g transform="translate(200, 120)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="20" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(240, 118)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-8,-3 Q-10,-10 -3,-10 Q3,-10 5,-6 Q7,-10 9,-5 Q11,0 7,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="22" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#8B7355">桥上谈心</text></svg>`,
+  rooftop: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rtSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#2C3E6B;stop-opacity:1"/><stop offset="60%" style="stop-color:#4A6FA5;stop-opacity:0.8"/><stop offset="100%" style="stop-color:#FF9A76;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="280" fill="url(#rtSky)"/><circle cx="100" cy="40" r="1.5" fill="white" opacity="0.5"/><circle cx="200" cy="55" r="1" fill="white" opacity="0.3"/><circle cx="350" cy="30" r="1.5" fill="white" opacity="0.6"/><circle cx="420" cy="60" r="1" fill="white" opacity="0.4"/><circle cx="280" cy="20" r="1" fill="white" opacity="0.3"/><rect x="0" y="160" width="480" height="120" fill="#3D3A38" opacity="0.4"/><rect x="0" y="150" width="480" height="15" fill="#6B5B45" opacity="0.6"/><g fill="#6B5B45" opacity="0.4"><rect x="30" y="100" width="80" height="65" rx="2"/><rect x="130" y="80" width="60" height="85" rx="2"/><rect x="210" y="110" width="70" height="55" rx="2"/><rect x="310" y="90" width="80" height="75" rx="2"/><rect x="410" y="100" width="50" height="65" rx="2"/></g><g fill="#FFD93D" opacity="0.3"><rect x="45" y="110" width="15" height="20" rx="1"/><rect x="70" y="110" width="15" height="20" rx="1"/><rect x="140" y="90" width="15" height="20" rx="1"/><rect x="165" y="90" width="15" height="20" rx="1"/><rect x="225" y="120" width="15" height="20" rx="1"/><rect x="325" y="100" width="15" height="20" rx="1"/><rect x="350" y="100" width="15" height="20" rx="1"/><rect x="420" y="110" width="15" height="20" rx="1"/></g><g transform="translate(240, 135)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(280, 133)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#FFD93D" opacity="0.6">天台看星星</text></svg>`,
+  bookstore: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F5E6D3" opacity="0.3"/><rect x="0" y="200" width="480" height="80" fill="#8B7355" opacity="0.2"/><rect x="0" y="30" width="480" height="30" fill="#6B5B45" opacity="0.7"/><rect x="170" y="35" width="140" height="20" rx="3" fill="#8B7355"/><text x="240" y="50" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="14" fill="white">书 店</text><rect x="20" y="70" width="130" height="140" rx="3" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1"/><g fill="#4A7C59" opacity="0.4"><rect x="30" y="80" width="8" height="30" rx="1"/><rect x="42" y="80" width="8" height="30" rx="1"/><rect x="54" y="80" width="8" height="30" rx="1"/><rect x="66" y="80" width="8" height="30" rx="1"/><rect x="78" y="80" width="8" height="30" rx="1"/><rect x="90" y="80" width="8" height="30" rx="1"/><rect x="102" y="80" width="8" height="30" rx="1"/><rect x="114" y="80" width="8" height="30" rx="1"/><rect x="126" y="80" width="8" height="30" rx="1"/></g><g fill="#E8636F" opacity="0.3"><rect x="30" y="120" width="8" height="30" rx="1"/><rect x="42" y="120" width="8" height="30" rx="1"/><rect x="54" y="120" width="8" height="30" rx="1"/><rect x="66" y="120" width="8" height="30" rx="1"/><rect x="78" y="120" width="8" height="30" rx="1"/><rect x="90" y="120" width="8" height="30" rx="1"/><rect x="102" y="120" width="8" height="30" rx="1"/><rect x="114" y="120" width="8" height="30" rx="1"/><rect x="126" y="120" width="8" height="30" rx="1"/></g><g fill="#5B8DB8" opacity="0.3"><rect x="30" y="160" width="8" height="30" rx="1"/><rect x="42" y="160" width="8" height="30" rx="1"/><rect x="54" y="160" width="8" height="30" rx="1"/><rect x="66" y="160" width="8" height="30" rx="1"/><rect x="78" y="160" width="8" height="30" rx="1"/><rect x="90" y="160" width="8" height="30" rx="1"/></g><rect x="170" y="70" width="140" height="140" rx="3" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1"/><g fill="#8B7355" opacity="0.4"><rect x="180" y="80" width="10" height="35" rx="1"/><rect x="195" y="80" width="10" height="35" rx="1"/><rect x="210" y="80" width="10" height="35" rx="1"/><rect x="225" y="80" width="10" height="35" rx="1"/><rect x="240" y="80" width="10" height="35" rx="1"/><rect x="255" y="80" width="10" height="35" rx="1"/><rect x="270" y="80" width="10" height="35" rx="1"/><rect x="285" y="80" width="10" height="35" rx="1"/></g><g fill="#4A7C59" opacity="0.3"><rect x="180" y="125" width="10" height="35" rx="1"/><rect x="195" y="125" width="10" height="35" rx="1"/><rect x="210" y="125" width="10" height="35" rx="1"/><rect x="225" y="125" width="10" height="35" rx="1"/><rect x="240" y="125" width="10" height="35" rx="1"/><rect x="255" y="125" width="10" height="35" rx="1"/></g><rect x="330" y="70" width="130" height="140" rx="3" fill="#FFFAF0" stroke="#E8DDD0" stroke-width="1"/><g fill="#FFB5C2" opacity="0.4"><rect x="340" y="80" width="8" height="30" rx="1"/><rect x="352" y="80" width="8" height="30" rx="1"/><rect x="364" y="80" width="8" height="30" rx="1"/><rect x="376" y="80" width="8" height="30" rx="1"/><rect x="388" y="80" width="8" height="30" rx="1"/><rect x="400" y="80" width="8" height="30" rx="1"/><rect x="412" y="80" width="8" height="30" rx="1"/><rect x="424" y="80" width="8" height="30" rx="1"/><rect x="436" y="80" width="8" height="30" rx="1"/></g><g fill="#FFD93D" opacity="0.3"><rect x="340" y="120" width="8" height="30" rx="1"/><rect x="352" y="120" width="8" height="30" rx="1"/><rect x="364" y="120" width="8" height="30" rx="1"/><rect x="376" y="120" width="8" height="30" rx="1"/><rect x="388" y="120" width="8" height="30" rx="1"/><rect x="400" y="120" width="8" height="30" rx="1"/></g><g transform="translate(220, 195)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/><rect x="12" y="5" width="12" height="16" rx="1" fill="#4A7C59" opacity="0.5"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#8B7355">书店邂逅</text></svg>`,
+  gym: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F5F5F5"/><rect x="0" y="200" width="480" height="80" fill="#8B7355" opacity="0.15"/><rect x="20" y="30" width="440" height="180" rx="4" fill="#FAFAFA" stroke="#ddd" stroke-width="1.5"/><rect x="0" y="20" width="480" height="25" fill="#E8636F" opacity="0.6"/><text x="240" y="38" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="14" fill="white">FITNESS</text><g transform="translate(80, 120)"><rect x="-40" y="-5" width="80" height="10" rx="3" fill="#6B5B45"/><rect x="-55" y="-10" width="15" height="20" rx="3" fill="#8B7355"/><rect x="40" y="-10" width="15" height="20" rx="3" fill="#8B7355"/><rect x="-3" y="-25" width="6" height="20" fill="#6B5B45"/></g><g transform="translate(220, 130)"><rect x="-5" y="-30" width="10" height="60" rx="2" fill="#C4B5A0"/><rect x="-8" y="30" width="16" height="6" fill="#C4B5A0"/><rect x="-30" y="-35" width="60" height="8" rx="2" fill="#8B7355"/><g fill="#3D3A38" opacity="0.3"><circle cx="-22" cy="-31" r="5"/><circle cx="22" cy="-31" r="5"/><circle cx="-22" cy="-25" r="5"/><circle cx="22" cy="-25" r="5"/></g></g><g transform="translate(360, 120)"><rect x="-30" y="-5" width="60" height="10" rx="3" fill="#5B8DB8" opacity="0.5"/><rect x="-20" y="-5" width="40" height="10" rx="2" fill="#6B5B45"/><circle cx="0" cy="0" r="15" fill="#87CEEB" opacity="0.2" stroke="#999" stroke-width="0.5"/><circle cx="0" cy="0" r="8" fill="#5B8DB8" opacity="0.3" stroke="#999" stroke-width="0.5"/></g><g transform="translate(160, 175)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="16" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(300, 170)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-7,-2 Q-9,-9 -3,-9 Q3,-9 4,-5 Q6,-9 8,-4 Q9,0 6,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="18" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#E8636F">一起健身</text></svg>`,
+  amusement_park: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="apSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#A8D8EA;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8F4F8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#apSky)"/><circle cx="80" cy="50" r="25" fill="white" opacity="0.7"/><circle cx="380" cy="40" r="20" fill="white" opacity="0.6"/><g transform="translate(240, 100)"><circle cx="0" cy="0" r="45" fill="#FFD93D" opacity="0.3" stroke="#E8636F" stroke-width="2"/><g stroke="#E8636F" stroke-width="1.5" fill="#FFFAF0" opacity="0.6"><rect x="-10" y="-50" width="8" height="20" rx="3"/><rect x="5" y="-50" width="8" height="20" rx="3"/><rect x="-10" y="-20" width="8" height="20" rx="3"/><rect x="5" y="-20" width="8" height="20" rx="3"/><rect x="15" y="-35" width="8" height="20" rx="3"/><rect x="-25" y="-35" width="8" height="20" rx="3"/><rect x="-35" y="-10" width="8" height="20" rx="3"/><rect x="25" y="-10" width="8" height="20" rx="3"/><rect x="-10" y="10" width="8" height="20" rx="3"/><rect x="5" y="10" width="8" height="20" rx="3"/></g><line x1="0" y1="45" x2="0" y2="100" stroke="#8B7355" stroke-width="3"/></g><rect x="0" y="180" width="480" height="100" fill="#8B7355" opacity="0.2"/><rect x="30" y="190" width="60" height="40" rx="5" fill="#E8636F" opacity="0.3" stroke="#E8636F" stroke-width="1"/><rect x="390" y="190" width="60" height="40" rx="5" fill="#FFB5C2" opacity="0.3" stroke="#E8636F" stroke-width="1"/><g transform="translate(180, 155)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(215, 153)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#E8636F">游乐园约会</text></svg>`,
+  bus: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#A8D8EA" opacity="0.3"/><rect x="0" y="170" width="480" height="110" fill="#8B7355" opacity="0.2"/><g transform="translate(240, 130)"><rect x="-80" y="-50" width="160" height="90" rx="8" fill="#FFD93D" opacity="0.5" stroke="#E8636F" stroke-width="2"/><rect x="-70" y="-40" width="140" height="50" rx="4" fill="#FAFAFA" stroke="#ddd" stroke-width="1"/><rect x="-65" y="-35" width="30" height="35" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><rect x="-30" y="-35" width="30" height="35" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><rect x="5" y="-35" width="30" height="35" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><rect x="40" y="-35" width="30" height="35" rx="3" fill="#A8D8EA" stroke="#999" stroke-width="0.5"/><circle cx="-55" cy="45" r="12" fill="#8B7355" stroke="#6B5B45" stroke-width="1"/><circle cx="55" cy="45" r="12" fill="#8B7355" stroke="#6B5B45" stroke-width="1"/><rect x="-80" y="-60" width="160" height="15" rx="4" fill="#E8636F" opacity="0.6"/></g><g transform="translate(260, 95)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="16" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(280, 93)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-7,-2 Q-9,-9 -3,-9 Q3,-9 4,-5 Q6,-9 8,-4 Q9,0 6,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="18" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#8B7355">公交出行</text></svg>`,
+  temple: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><rect width="480" height="280" fill="#F5E6D3" opacity="0.4"/><rect x="0" y="180" width="480" height="100" fill="#8B7355" opacity="0.15"/><g transform="translate(240, 80)"><path d="M-60,0 L0,-30 L60,0" fill="#8B7355" stroke="#6B5B45" stroke-width="2"/><rect x="-50" y="0" width="100" height="70" fill="#8B7355" opacity="0.7" stroke="#6B5B45" stroke-width="1"/><rect x="-15" y="10" width="30" height="60" fill="#FFD93D" opacity="0.4"/><rect x="-45" y="10" width="30" height="60" fill="#8B7355" opacity="0.5"/><rect x="15" y="10" width="30" height="60" fill="#8B7355" opacity="0.5"/><g opacity="0.3"><circle cx="-5" cy="5" r="3" fill="#FFD93D"/><circle cx="5" cy="5" r="3" fill="#FFD93D"/><circle cx="0" cy="-5" r="3" fill="#FFD93D"/></g></g><g transform="translate(200, 170)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(240, 168)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#8B7355">寺庙祈福</text></svg>`,
+  snow_scene: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="snSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#C8D8E8;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8EFF5;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#snSky)"/><rect x="0" y="150" width="480" height="130" fill="white" opacity="0.8"/><g fill="white" opacity="0.6"><circle cx="50" cy="30" r="2"/><circle cx="120" cy="50" r="2"/><circle cx="200" cy="20" r="2"/><circle cx="280" cy="40" r="2"/><circle cx="350" cy="25" r="2"/><circle cx="420" cy="45" r="2"/><circle cx="80" cy="70" r="2"/><circle cx="160" cy="80" r="2"/><circle cx="300" cy="65" r="2"/><circle cx="400" cy="75" r="2"/></g><g transform="translate(100, 130)" opacity="0.5"><rect x="0" y="0" width="40" height="50" rx="3" fill="#6B5B45"/><path d="M0,0 L20,-15 L40,0" fill="#8B7355"/><rect x="15" y="25" width="10" height="25" rx="1" fill="#8B7355"/><rect x="5" y="10" width="8" height="8" rx="1" fill="#A8D8EA" opacity="0.5"/><rect x="27" y="10" width="8" height="8" rx="1" fill="#A8D8EA" opacity="0.5"/></g><g transform="translate(350, 120)" opacity="0.5"><rect x="0" y="0" width="40" height="50" rx="3" fill="#6B5B45"/><path d="M0,0 L20,-15 L40,0" fill="#8B7355"/><rect x="15" y="25" width="10" height="25" rx="1" fill="#8B7355"/><rect x="5" y="10" width="8" height="8" rx="1" fill="#A8D8EA" opacity="0.5"/><rect x="27" y="10" width="8" height="8" rx="1" fill="#A8D8EA" opacity="0.5"/></g><g transform="translate(220, 160)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/><rect x="-10" y="34" width="20" height="6" rx="2" fill="#8B7355" opacity="0.4"/></g><g transform="translate(255, 158)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-10" y="36" width="20" height="6" rx="2" fill="#8B7355" opacity="0.4"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#6B5B45">雪中漫步</text></svg>`,
+  aquarium: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="aqBg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#1A3A5C;stop-opacity:1"/><stop offset="100%" style="stop-color:#4A90A4;stop-opacity:0.5"/></linearGradient></defs><rect width="480" height="280" fill="url(#aqBg)"/><rect x="30" y="30" width="420" height="180" rx="8" fill="#2A5A7A" opacity="0.4" stroke="#4A90A4" stroke-width="2"/><g opacity="0.6"><ellipse cx="150" cy="100" rx="20" ry="10" fill="#87CEEB" stroke="#A8D8EA" stroke-width="1"/><circle cx="145" cy="95" r="2" fill="#FFD93D"/><circle cx="155" cy="95" r="2" fill="#FFD93D"/><path d="M170,100 Q180,95 170,90" fill="#87CEEB" opacity="0.8"/></g><g opacity="0.5"><ellipse cx="300" cy="80" rx="15" ry="8" fill="#FFB5C2" stroke="#E8636F" stroke-width="0.5"/><circle cx="295" cy="75" r="1.5" fill="#FFD93D"/><circle cx="305" cy="75" r="1.5" fill="#FFD93D"/><path d="M315,80 Q325,75 315,70" fill="#FFB5C2" opacity="0.8"/></g><g opacity="0.4"><ellipse cx="250" cy="130" rx="25" ry="12" fill="#A8D8EA" stroke="#87CEEB" stroke-width="1"/><path d="M275,130 Q285,125 275,120" fill="#A8D8EA" opacity="0.8"/></g><circle cx="100" cy="150" r="5" fill="#FFD93D" opacity="0.3"/><circle cx="350" cy="140" r="4" fill="#87CEEB" opacity="0.3"/><rect x="30" y="180" width="420" height="30" fill="#6B5B45" opacity="0.4" rx="3"/><g transform="translate(200, 200)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(240, 198)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#A8D8EA">水族馆约会</text></svg>`,
+  playground: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pgSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#A8D8EA;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8F4F8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#pgSky)"/><circle cx="80" cy="40" r="20" fill="white" opacity="0.6"/><rect x="0" y="170" width="480" height="110" fill="#4A7C59" opacity="0.3"/><g transform="translate(120, 100)" opacity="0.5"><rect x="0" y="0" width="5" height="70" fill="#8B7355"/><rect x="60" y="0" width="5" height="70" fill="#8B7355"/><rect x="0" y="0" width="65" height="4" fill="#8B7355"/><path d="M0,4 Q32,10 65,4" fill="#FFD93D" opacity="0.4" stroke="#8B7355" stroke-width="1"/></g><g transform="translate(300, 110)" opacity="0.4"><rect x="0" y="0" width="6" height="60" fill="#6B5B45"/><rect x="50" y="0" width="6" height="60" fill="#6B5B45"/><rect x="0" y="5" width="56" height="3" fill="#6B5B45"/><rect x="0" y="20" width="56" height="3" fill="#6B5B45"/><rect x="0" y="35" width="56" height="3" fill="#6B5B45"/></g><g transform="translate(220, 160)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(250, 158)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#4A7C59">校园操场</text></svg>`,
+  camp: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cpSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#2C3E50;stop-opacity:0.4"/><stop offset="60%" style="stop-color:#4A6FA5;stop-opacity:0.5"/><stop offset="100%" style="stop-color:#FF9A76;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="280" fill="url(#cpSky)"/><circle cx="350" cy="40" r="25" fill="#FFD93D" opacity="0.4"/><g fill="white" opacity="0.4"><circle cx="50" cy="25" r="1"/><circle cx="120" cy="15" r="1"/><circle cx="250" cy="30" r="1"/><circle cx="380" cy="20" r="1"/></g><rect x="0" y="170" width="480" height="110" fill="#4A7C59" opacity="0.35"/><g transform="translate(150, 100)" opacity="0.6"><path d="M-20,0 L0,-25 L20,0" fill="#8B7355" stroke="#6B5B45" stroke-width="1.5"/><line x1="0" y1="-25" x2="0" y2="0" stroke="#6B5B45" stroke-width="1"/><line x1="-20" y1="0" x2="20" y2="0" stroke="#6B5B45" stroke-width="1"/></g><g transform="translate(320, 130)" opacity="0.5"><rect x="-8" y="0" width="16" height="20" rx="1" fill="#8B7355"/><circle cx="0" cy="0" r="3" fill="#FFD93D" opacity="0.6"/><ellipse cx="0" cy="-8" rx="10" ry="5" fill="#87CEEB" opacity="0.2"/><ellipse cx="0" cy="-12" rx="8" ry="3" fill="#87CEEB" opacity="0.15"/></g><g transform="translate(220, 155)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(255, 153)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#FFD93D" opacity="0.7">户外露营</text></svg>`,
+  ferry: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="frSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#A8D8EA;stop-opacity:1"/><stop offset="100%" style="stop-color:#FF9A76;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="280" fill="url(#frSky)"/><circle cx="380" cy="30" r="25" fill="#FFD93D" opacity="0.4"/><rect x="0" y="150" width="480" height="130" fill="#4A90A4" opacity="0.4"/><path d="M0,160 Q120,155 240,165 Q360,175 480,160" fill="none" stroke="#4A90A4" stroke-width="1" opacity="0.5"/><path d="M0,170 Q120,175 240,168 Q360,180 480,175" fill="none" stroke="#4A90A4" stroke-width="1" opacity="0.3"/><g transform="translate(240, 120)"><path d="M-80,30 L-60,-10 L60,-10 L80,30" fill="white" stroke="#8B7355" stroke-width="1.5"/><rect x="-50" y="0" width="100" height="20" rx="3" fill="#FFFAF0" stroke="#ddd" stroke-width="0.5"/><rect x="-30" y="-5" width="15" height="10" rx="2" fill="#A8D8EA" opacity="0.5"/><rect x="-10" y="-5" width="15" height="10" rx="2" fill="#A8D8EA" opacity="0.5"/><rect x="10" y="-5" width="15" height="10" rx="2" fill="#A8D8EA" opacity="0.5"/><rect x="-5" y="-30" width="10" height="25" fill="#8B7355"/><path d="M-5,-30 L25,-15" fill="#FFFAF0" stroke="#8B7355" stroke-width="0.5" opacity="0.6"/></g><g transform="translate(225, 100)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="16" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(250, 98)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-7,-2 Q-9,-9 -3,-9 Q3,-9 4,-5 Q6,-9 8,-4 Q9,0 6,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="18" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#4A90A4">渡轮约会</text></svg>`,
+  cherry_blossom: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cbSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#FFE4E1;stop-opacity:1"/><stop offset="100%" style="stop-color:#FFC0CB;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="280" fill="url(#cbSky)"/><rect x="0" y="170" width="480" height="110" fill="#8B7355" opacity="0.15"/><g transform="translate(100, 60)" opacity="0.6"><path d="M0,0 Q10,-50 5,-80" fill="none" stroke="#8B7355" stroke-width="3"/><path d="M5,-80 Q15,-85 20,-70" fill="none" stroke="#8B7355" stroke-width="2"/><path d="M5,-80 Q-5,-85 -10,-70" fill="none" stroke="#8B7355" stroke-width="2"/><g fill="#FFB5C2" opacity="0.6"><circle cx="20" cy="-70" r="5"/><circle cx="-10" cy="-70" r="5"/><circle cx="5" cy="-80" r="5"/><circle cx="15" cy="-90" r="4"/><circle cx="-5" cy="-90" r="4"/></g></g><g transform="translate(380, 50)" opacity="0.5"><path d="M0,0 Q-10,-40 -5,-70" fill="none" stroke="#8B7355" stroke-width="2.5"/><g fill="#FFB5C2" opacity="0.5"><circle cx="-5" cy="-70" r="4"/><circle cx="-15" cy="-60" r="3"/><circle cx="5" cy="-75" r="3"/></g></g><g fill="#FFB5C2" opacity="0.4"><circle cx="80" cy="50" r="2"/><circle cx="160" cy="70" r="2"/><circle cx="250" cy="40" r="2"/><circle cx="340" cy="60" r="2"/><circle cx="420" cy="80" r="2"/><circle cx="130" cy="100" r="1.5"/><circle cx="300" cy="90" r="1.5"/><circle cx="200" cy="120" r="1.5"/><circle cx="70" cy="130" r="1"/><circle cx="350" cy="110" r="1"/><circle cx="450" cy="130" r="1"/></g><g transform="translate(220, 155)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(255, 153)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#E8636F" opacity="0.7">樱花漫步</text></svg>`,
+  night_market: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="nmSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#2C3E50;stop-opacity:1"/><stop offset="100%" style="stop-color:#34495E;stop-opacity:0.8"/></linearGradient></defs><rect width="480" height="280" fill="url(#nmSky)"/><rect x="0" y="180" width="480" height="100" fill="#6B5B45" opacity="0.3"/><g fill="#FFD93D" opacity="0.8"><rect x="30" y="60" width="80" height="60" rx="3" fill="#FFD93D" opacity="0.2" stroke="#FFD93D" stroke-width="1"/><rect x="140" y="50" width="80" height="70" rx="3" fill="#FF6B6B" opacity="0.2" stroke="#FFD93D" stroke-width="1"/><rect x="250" y="55" width="80" height="65" rx="3" fill="#87CEEB" opacity="0.2" stroke="#FFD93D" stroke-width="1"/><rect x="360" y="60" width="80" height="60" rx="3" fill="#FFB5C2" opacity="0.2" stroke="#FFD93D" stroke-width="1"/></g><g fill="#FFD93D" opacity="0.4"><rect x="40" y="100" width="60" height="5" rx="1"/><rect x="150" y="90" width="60" height="5" rx="1"/><rect x="260" y="95" width="60" height="5" rx="1"/><rect x="370" y="100" width="60" height="5" rx="1"/></g><g opacity="0.3"><circle cx="60" cy="80" r="4" fill="#FFD93D"/><circle cx="180" cy="70" r="4" fill="#FFD93D"/><circle cx="290" cy="75" r="4" fill="#FFD93D"/><circle cx="400" cy="80" r="4" fill="#FFD93D"/><circle cx="60" cy="80" r="8" fill="#FFD93D" opacity="0.1"/><circle cx="180" cy="70" r="8" fill="#FFD93D" opacity="0.1"/><circle cx="290" cy="75" r="8" fill="#FFD93D" opacity="0.1"/><circle cx="400" cy="80" r="8" fill="#FFD93D" opacity="0.1"/></g><g transform="translate(220, 160)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(255, 158)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#FFD93D" opacity="0.6">逛夜市</text></svg>`,
+  graduation: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gdSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#A8D8EA;stop-opacity:1"/><stop offset="100%" style="stop-color:#E8F4F8;stop-opacity:1"/></linearGradient></defs><rect width="480" height="280" fill="url(#gdSky)"/><circle cx="380" cy="30" r="25" fill="#FFD93D" opacity="0.3"/><g transform="translate(120, 50)" opacity="0.4"><rect x="-40" y="0" width="80" height="100" rx="3" fill="#8B7355"/><rect x="-10" y="30" width="20" height="70" fill="#6B5B45" opacity="0.3"/></g><g transform="translate(350, 40)" opacity="0.4"><rect x="-30" y="0" width="60" height="90" rx="3" fill="#8B7355"/><rect x="-8" y="25" width="16" height="65" fill="#6B5B45" opacity="0.3"/></g><rect x="0" y="170" width="480" height="110" fill="#8B7355" opacity="0.15"/><g transform="translate(210, 135)"><circle cx="0" cy="0" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="-8" y="-4" width="16" height="8" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1.2"/><line x1="-8" y1="0" x2="-14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><line x1="8" y1="0" x2="14" y2="0" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-12" y="14" width="24" height="35" rx="4" fill="#2D2B2A"/><path d="M-12,14 L0,5 L12,14" fill="#2D2B2A" stroke="#2D2B2A" stroke-width="1"/><rect x="-3" y="5" width="6" height="10" fill="#FFD93D" opacity="0.5"/><path d="M0,5 Q5,-5 15,-10" fill="none" stroke="#FFD93D" stroke-width="2" opacity="0.6"/></g><g transform="translate(250, 133)"><circle cx="0" cy="0" r="12" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><path d="M-10,-4 Q-14,-14 -5,-14 Q5,-14 7,-9 Q9,-14 13,-8 Q15,0 10,5" fill="#3D3A38"/><rect x="-12" y="14" width="24" height="35" rx="4" fill="#2D2B2A"/><path d="M-12,14 L0,5 L12,14" fill="#2D2B2A" stroke="#2D2B2A" stroke-width="1"/><rect x="-3" y="5" width="6" height="10" fill="#FFD93D" opacity="0.5"/><path d="M0,5 Q-5,-5 -15,-10" fill="none" stroke="#FFD93D" stroke-width="2" opacity="0.6"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#8B7355">毕业时刻</text></svg>`,
+  hot_spring: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="hsSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#C8E6C9;stop-opacity:0.5"/><stop offset="100%" style="stop-color:#A8D8EA;stop-opacity:0.3"/></linearGradient></defs><rect width="480" height="280" fill="url(#hsSky)"/><g transform="translate(80, 40)" opacity="0.4"><path d="M0,0 L20,-30 L40,0" fill="#4A7C59" stroke="#4A7C59" stroke-width="1"/></g><g transform="translate(350, 30)" opacity="0.3"><path d="M0,0 L30,-40 L60,0" fill="#4A7C59" stroke="#4A7C59" stroke-width="1"/></g><rect x="60" y="120" width="360" height="80" rx="20" fill="#87CEEB" opacity="0.4" stroke="#A8D8EA" stroke-width="2"/><rect x="60" y="140" width="360" height="60" rx="15" fill="#A8D8EA" opacity="0.3"/><g opacity="0.3"><ellipse cx="150" cy="130" rx="15" ry="5" fill="white"/><ellipse cx="250" cy="125" rx="15" ry="5" fill="white"/><ellipse cx="350" cy="130" rx="15" ry="5" fill="white"/><path d="M140,130 Q140,100 145,80" fill="none" stroke="white" stroke-width="1" opacity="0.4"/><path d="M245,125 Q245,95 250,75" fill="none" stroke="white" stroke-width="1" opacity="0.4"/><path d="M340,130 Q340,100 345,80" fill="none" stroke="white" stroke-width="1" opacity="0.4"/></g><rect x="0" y="190" width="480" height="90" fill="#8B7355" opacity="0.2"/><g transform="translate(180, 140)"><circle cx="0" cy="-5" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="-8" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="7" width="16" height="15" rx="3" fill="#5B8DB8" opacity="0.6" stroke="#2D2B2A" stroke-width="0.5"/></g><g transform="translate(220, 138)"><circle cx="0" cy="-5" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-9,-8 Q-12,-17 -4,-17 Q4,-17 6,-12 Q8,-17 11,-11 Q13,-5 8,-1" fill="#3D3A38"/><rect x="-8" y="7" width="16" height="15" rx="3" fill="#FFB5C2" opacity="0.6" stroke="#2D2B2A" stroke-width="0.5"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#4A90A4">泡温泉</text></svg>`,
+  christmas: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="chSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#2C3E50;stop-opacity:0.7"/><stop offset="100%" style="stop-color:#4A6FA5;stop-opacity:0.5"/></linearGradient></defs><rect width="480" height="280" fill="url(#chSky)"/><circle cx="350" cy="40" r="20" fill="#FFD93D" opacity="0.4"/><g fill="white" opacity="0.3"><circle cx="50" cy="30" r="1"/><circle cx="100" cy="20" r="1"/><circle cx="200" cy="35" r="1"/><circle cx="300" cy="25" r="1"/><circle cx="400" cy="40" r="1"/><circle cx="80" cy="50" r="1"/><circle cx="250" cy="55" r="1"/></g><rect x="0" y="170" width="480" height="110" fill="white" opacity="0.2"/><g transform="translate(240, 80)" opacity="0.7"><path d="M0,-60 L-25,-45 L25,-45" fill="#4A7C59" stroke="#4A7C59" stroke-width="1"/><path d="M0,-45 L-20,-30 L20,-30" fill="#4A7C59" stroke="#4A7C59" stroke-width="1"/><path d="M0,-30 L-15,-15 L15,-15" fill="#4A7C59" stroke="#4A7C59" stroke-width="1"/><rect x="-5" y="-15" width="10" height="10" fill="#8B7355"/><g fill="#FFD93D" opacity="0.5"><circle cx="0" cy="-50" r="3"/><circle cx="-10" cy="-38" r="2"/><circle cx="10" cy="-38" r="2"/><circle cx="-8" cy="-25" r="2"/><circle cx="8" cy="-25" r="2"/><circle cx="0" cy="-18" r="3" fill="#E8636F" opacity="0.5"/></g><rect x="-3" y="-63" width="6" height="5" fill="#FFD93D" opacity="0.5"/></g><g transform="translate(210, 160)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><rect x="-7" y="-3" width="14" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-8" y="12" width="16" height="22" rx="3" fill="#E8636F" opacity="0.5" stroke="#2D2B2A" stroke-width="1"/><rect x="-10" y="34" width="20" height="4" rx="1" fill="#FFD93D" opacity="0.3"/></g><g transform="translate(245, 158)"><circle cx="0" cy="0" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.2"/><path d="M-9,-3 Q-12,-12 -4,-12 Q4,-12 6,-7 Q8,-12 11,-6 Q13,0 8,4" fill="#3D3A38"/><rect x="-8" y="12" width="16" height="24" rx="3" fill="#FFB5C2" opacity="0.6" stroke="#2D2B2A" stroke-width="1"/><rect x="-10" y="36" width="20" height="4" rx="1" fill="#FFD93D" opacity="0.3"/></g><text x="240" y="260" text-anchor="middle" font-family="'Ma Shan Zheng', cursive" font-size="16" fill="#FFD93D" opacity="0.6">圣诞温暖</text></svg>`,
+  ferris_wheel: `<svg class="scene-illustration" viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fwSky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#FF9A76;stop-opacity:0.4"/><stop offset="100%" style="stop-color:#A8D8EA;stop-opacity:0.5"/></linearGradient></defs><rect width="480" height="280" fill="url(#fwSky)"/><rect x="0" y="180" width="480" height="100" fill="#8B7355" opacity="0.2"/><g transform="translate(240, 110)" opacity="0.7"><circle cx="0" cy="0" r="50" fill="none" stroke="#8B7355" stroke-width="2"/><g stroke="#8B7355" stroke-width="1.5"><line x1="0" y1="-50" x2="0" y2="50"/><line x1="-50" y1="0" x2="50" y2="0"/><line x1="-35" y1="-35" x2="35" y2="35"/><line x1="35" y1="-35" x2="-35" y2="35"/></g><g fill="#FFFAF0" stroke="#E8636F" stroke-width="1"><rect x="-8" y="-60" width="16" height="12" rx="3"/><rect x="-8" y="48" width="16" height="12" rx="3"/><rect x="-58" y="-6" width="16" height="12" rx="3"/><rect x="42" y="-6" width="16" height="12" rx="3"/><rect x="-42" y="-42" width="16" height="12" rx="3"/><rect x="26" y="30" width="16" height="12" rx="3"/><rect x="26" y="-42" width="16" height="12" rx="3"/><rect x="-42" y="30" width="16" height="12" rx="3"/></g><line x1="0" y1="50" x2="0" y2="70" stroke="#8B7355" stroke-width="3"/><line x1="-20" y1="70" x2="20" y2="70" stroke="#8B7355" stroke-width="2"/></g><g transform="translate(180, 160)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><rect x="-6" y="-3" width="12" height="6" rx="1.5" fill="none" stroke="#2D2B2A" stroke-width="1"/><rect x="-7" y="10" width="14" height="16" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1"/></g><g transform="translate(210, 158)"><circle cx="0" cy="0" r="9" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1"/><path d="M-7,-2 Q-9,-9 -3,-9 Q3,-9 4,-5 Q6,-9 8,-4 Q9,0 6,3" fill="#3D3A38"/><rect x="-7" y="10" width="14" height="18" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1"/></g><text x="240" y="260" text-anchor="middle" font-family="'ZCOOL KuaiLe', cursive" font-size="14" fill="#E8636F">摩天轮下</text></svg>`
+};
+
+const avatars = {
+  him: `<svg viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="16" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><rect x="12" y="13" width="16" height="7" rx="2" fill="none" stroke="#2D2B2A" stroke-width="1.2"/><line x1="12" y1="16" x2="6" y2="16" stroke="#2D2B2A" stroke-width="1.2"/><line x1="28" y1="16" x2="34" y2="16" stroke="#2D2B2A" stroke-width="1.2"/><rect x="11" y="28" width="18" height="12" rx="3" fill="#5B8DB8" stroke="#2D2B2A" stroke-width="1.2"/></svg>`,
+  her: `<svg viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="16" r="10" fill="#FFE0C2" stroke="#2D2B2A" stroke-width="1.5"/><path d="M8,12 Q5,0 15,0 Q22,0 25,5 Q28,0 32,6 Q35,13 28,18" fill="#3D3A38"/><rect x="11" y="28" width="18" height="12" rx="3" fill="#FFB5C2" stroke="#2D2B2A" stroke-width="1.2"/></svg>`
+};
+
+const defaultComicConfig = {
+  title: "相亲记录",
+  subtitle: "一个上海前端程序员的真实故事",
+  authorComment: { enabled: true, author: "峰哥亡命天涯", text: "这老哥是个典型的力工型选手，但属于力工里面比较有救的那种。\n你看他的行动力——下午3点请假、买花、坐高铁、堵车、狂奔。很多人连这一步都迈不出去，天天在那'我该不该主动'，脑子里想了一万遍，腿一步没动。\n她说'我不喜欢你'的时候，他没有崩溃。他说'我知道'，然后继续聊。大部分人听到这句话，要么当场黑脸走人，要么回去发朋友圈'终究是错付了'。\n问题在哪？不会聊天。'这种2元店很多吧'——人家专门从洛阳给你带的，你来这么一句？\n但他说了句话说得挺好——'一个人孤单总比两个人彼此消耗要好'。说明他是有思考的。\n想连接了。" },
+  chapters: [
+    {
+      id: "chapter1",
+      number: "壹",
+      title: "初 识",
+      scenes: [
+        {
+          id: "scene1_1",
+          type: "normal",
+          illustration: "station",
+          timeline: "",
+          caption: "上海前端程序员 <b>_星河</b>，通过相亲认识了一个女生。异地，高铁45分钟。每两周回去一次，吃饭、散步、送小礼物。",
+          dialogues: []
+        },
+        {
+          id: "scene1_2",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: [
+            { speaker: "him", name: "_星河", text: "每天就偶尔聊几句，她也不喜欢打视频。我感觉没怎么深入了解过……<span class=\"thought\">聊不起来怎么办……</span>" }
+          ]
+        }
+      ]
+    },
+    {
+      id: "chapter2",
+      number: "贰",
+      title: "520 奔 袭",
+      scenes: [
+        {
+          id: "scene2_1",
+          type: "normal",
+          illustration: "flower_shop",
+          timeline: "2026年5月20日 下午3:00",
+          caption: "",
+          dialogues: []
+        },
+        {
+          id: "scene2_2",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: [
+            { speaker: "him", name: "出租车师傅", text: "小伙子，你这是要去见小女友吧？你是从外地赶回来的吧？" },
+            { thought: "woc，师傅您神了……谁还没年轻过。" }
+          ]
+        },
+        {
+          id: "scene2_3",
+          type: "dramatic",
+          illustration: "sunset_gate",
+          timeline: "5:40 PM · 她的小区门口",
+          caption: "",
+          dialogues: []
+        },
+        {
+          id: "scene2_4",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: [
+            { speaker: "him", name: "_星河", text: "诺，给你——<b>公主请发财</b>" },
+            { speaker: "her", name: "她", text: "怎么想到今天回来的？不是说好周末回的嘛……<br><b>你太冲动了。</b>" },
+            { thought: "心里一紧……但她说完还是接过了花。" }
+          ]
+        }
+      ]
+    },
+    {
+      id: "chapter3",
+      number: "叁",
+      title: "江 边 散 步",
+      scenes: [
+        {
+          id: "scene3_1",
+          type: "rain",
+          illustration: "riverside",
+          timeline: "",
+          caption: "晚风徐徐，两个人沿着江边走。空气有点尴尬，只有一搭没一搭地聊着。",
+          dialogues: []
+        },
+        {
+          id: "scene3_2",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "她付的钱。那一刻，他觉得有戏。",
+          dialogues: [
+            { speaker: "her", name: "她", text: "吃饭了吗？" },
+            { speaker: "him", name: "_星河", text: "没。<br><span class=\"thought\">想和你一起吃的……</span>" },
+            { speaker: "her", name: "她", text: "附近有家霸王茶姬，你不是爱喝嘛，要不去看看？" }
+          ]
+        }
+      ]
+    },
+    {
+      id: "chapter4",
+      number: "肆",
+      title: "包 场 电 影",
+      scenes: [
+        {
+          id: "scene4_1",
+          type: "normal",
+          illustration: "cinema",
+          timeline: "2026年5月24日 周六下午",
+          caption: "",
+          dialogues: []
+        },
+        {
+          id: "scene4_2",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "他用余光偷瞟她，看她看得很认真，就没过多打扰。",
+          dialogues: [
+            { speaker: "her", name: "她", text: "哇，包场哎！我觉得这种美国大片还挺有意思的，为啥你们都不咋喜欢看？" },
+            { speaker: "him", name: "_星河", text: "剧情都差不多，个人英雄主义嘛。当视觉盛宴看就好了。" }
+          ]
+        }
+      ]
+    },
+    {
+      id: "chapter5",
+      number: "伍",
+      title: "亭 子 摊 牌",
+      scenes: [
+        {
+          id: "scene5_1",
+          type: "dramatic",
+          illustration: "pavilion",
+          timeline: "看完电影 · 江边的亭子",
+          caption: "",
+          dialogues: []
+        },
+        {
+          id: "scene5_2",
+          type: "dramatic",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: [
+            { speaker: "him", name: "_星河", text: "我觉得我们聊天每天都是一些没什么营养的话……相处有一段时间了，你觉得我这个人怎么样？" },
+            { speaker: "her", name: "她", text: "……<br><b style=\"font-size: 15px; color: #E8636F;\">我不喜欢你。</b>" },
+            { thought: "终于要来了吗……" }
+          ]
+        },
+        {
+          id: "scene5_3",
+          type: "romantic",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: [
+            { speaker: "him", name: "_星河", text: "我知道。那你还坚持吗？" },
+            { speaker: "her", name: "她", text: "我其实不太会谈恋爱，也不知道怎么去喜欢上一个人……<br>但是你又为我做了这么多，从新年礼物、生日礼物、到女神节礼物……<br><b>你挺好的，真的。</b>" }
+          ]
+        },
+        {
+          id: "scene5_4",
+          type: "romantic",
+          illustration: "hand_holding",
+          timeline: "",
+          caption: "他伸出手：「可以不？」<br>她犹豫了一下，让他牵了。过了一会儿，她挣脱了——<br><b>「你手心有汗，握着不舒服。」</b><br>他笑了笑：「我一紧张就这样。」",
+          dialogues: []
+        }
+      ]
+    },
+    {
+      id: "chapter6",
+      number: "陆",
+      title: "和 解",
+      scenes: [
+        {
+          id: "scene6_1",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: [
+            { speaker: "her", name: "她", text: "我今天讲这么多，其实是把球传给了你。<br><b>你要是想继续，我就继续；你要是不想继续，那就各不联系了。</b><br>所以你怎么想的？" }
+          ]
+        },
+        {
+          id: "scene6_2",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: [
+            { speaker: "her", name: "她（列举他的优点）", text: "你不会pua我，很多时候也会尊重我的想法。外形也看得过去，工作也还好，性格也还可以，<b>还有不抽烟</b>。" },
+            { speaker: "him", name: "_星河", text: "相遇即是缘分。我不会去攀援，但我会惜缘。<br><b>我想继续试试。</b>" }
+          ]
+        },
+        {
+          id: "scene6_3",
+          type: "normal",
+          illustration: "",
+          timeline: "",
+          caption: "他保证以后不会了。她说：\"改变是很难的。\" 但还是选择再给他一次机会。",
+          dialogues: [
+            { speaker: "her", name: "她", text: "你还记不记得我五一送你的东西？你收到怎么说的？" },
+            { speaker: "him", name: "_星河", text: "记得啊，那个手机支架嘛。我说——<br><s style=\"color: #E8636F;\">「这种2元店很多吧」</s>" },
+            { speaker: "her", name: "她", text: "<b>去死吧。</b>这可是我上次去洛阳旅游专门买的！多可爱啊！我弟想要我都没给！" }
+          ]
+        }
+      ]
+    },
+    {
+      id: "chapter7",
+      number: "终",
+      title: "相 遇 即 是 缘 分",
+      scenes: [
+        {
+          id: "scene7_1",
+          type: "romantic",
+          illustration: "",
+          timeline: "",
+          caption: "",
+          dialogues: []
+        }
+      ]
+    }
+  ]
+};
+
+// 当前状态
+let comicConfig = JSON.parse(JSON.stringify(defaultComicConfig));
+let currentChapterIndex = 0;
+let expandedScenes = new Set();
+
+// === 工具函数 ===
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+const illLabels = {station:'火车站台',flower_shop:'花店',sunset_gate:'夕阳门口',riverside:'江边夜景',cinema:'电影院',pavilion:'亭子',hand_holding:'牵手',classroom:'教室',office:'办公室',home:'家庭',supermarket:'超市',park:'公园',restaurant:'餐厅',airport:'机场',beach:'海边',cafe:'咖啡馆',library:'图书馆',mountain:'山上',street:'商业街',subway:'地铁',hospital:'医院',wedding:'婚礼',night_street:'夜晚街道',balcony:'阳台',kitchen:'厨房',rain_scene:'雨中',bridge:'桥上',rooftop:'天台',bookstore:'书店',gym:'健身房',amusement_park:'游乐园',bus:'公交车',temple:'寺庙',snow_scene:'雪中',aquarium:'水族馆',playground:'操场',camp:'露营',ferry:'渡轮',cherry_blossom:'樱花下',night_market:'夜市',graduation:'毕业典礼',hot_spring:'温泉',christmas:'圣诞节',ferris_wheel:'摩天轮'};
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2D2B2A;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.style.opacity = '1', 10);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+// === 渲染漫画预览 ===
+function renderComic() {
+  const container = document.getElementById('comicContainer');
+  let html = `<div class="header fade-in"><h1>${comicConfig.title}</h1><div class="subtitle">${comicConfig.subtitle}</div><div class="deco-line"></div></div>`;
+  comicConfig.chapters.forEach(ch => {
+    html += `<div class="chapter fade-in"><span class="chapter-num">${ch.number}</span><span class="chapter-line"></span><span class="chapter-title">${ch.title}</span></div>`;
+    ch.scenes.forEach(scene => {
+      const cls = scene.type !== 'normal' ? `panel ${scene.type} fade-in` : 'panel fade-in';
+      html += `<div class="${cls}" id="preview-${scene.id}">`;
+      if (scene.timeline) html += `<div class="timeline-date">${scene.timeline}</div>`;
+      if (scene.illustration && illustrations[scene.illustration]) html += illustrations[scene.illustration];
+      scene.dialogues.forEach(d => {
+        if (d.thought) {
+          html += `<div class="inner-thought">${d.thought}</div>`;
+        } else {
+          const rev = d.speaker === 'her';
+          html += `<div class="dialogue-row${rev?' reverse':''}"><div class="char-avatar ${d.speaker}">${avatars[d.speaker]||''}</div><div class="bubble-wrap"><div class="bubble-name ${d.speaker}" style="color:${d.speaker==='him'?'#5B8DB8':'#E8636F'}">${d.name}</div><div class="bubble ${d.speaker}">${d.text}</div></div></div>`;
+        }
+      });
+      if (scene.caption) {
+        const narr = scene.caption.includes('他') || scene.caption.includes('她');
+        html += `<div class="panel-caption${narr?' narrator':''}">${scene.caption}</div>`;
+      }
+      html += '</div>';
+    });
+  });
+  if (comicConfig.authorComment && comicConfig.authorComment.enabled && comicConfig.authorComment.text) {
+    html += `<div class="author-comment fade-in"><div class="comment-body">${comicConfig.authorComment.text}</div><div class="comment-sig">—— ${comicConfig.authorComment.author}视角</div></div>`;
+  }
+  html += `<div class="end-card fade-in"><div class="end-text">未完待续</div><div class="end-sub">感谢阅读</div></div>`;
+  container.innerHTML = html;
+  setTimeout(() => { document.querySelectorAll('.fade-in').forEach((el,i) => setTimeout(() => el.classList.add('visible'), i*80)); }, 50);
+}
+
+// === 渲染编辑面板 ===
+function renderEditor() {
+  const sidebar = document.getElementById('editorSidebar');
+  const ch = comicConfig.chapters[currentChapterIndex];
+  let h = '';
+  h += `<div class="editor-section"><div class="section-title">漫画设置</div>
+    <div class="editor-group"><label>标题</label><input type="text" value="${escapeHtml(comicConfig.title)}" oninput="comicConfig.title=this.value;renderComic()"></div>
+    <div class="editor-group"><label>副标题</label><input type="text" value="${escapeHtml(comicConfig.subtitle)}" oninput="comicConfig.subtitle=this.value;renderComic()"></div></div>`;
+  const ac = comicConfig.authorComment || {};
+  h += `<div class="editor-section"><div class="section-header"><span class="section-title">作者视角评论</span><label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" ${ac.enabled?'checked':''} onchange="comicConfig.authorComment.enabled=this.checked;renderComic()">显示</label></div>
+    <div class="editor-group"><label>署名</label><input type="text" value="${escapeHtml(ac.author||'')}" oninput="comicConfig.authorComment.author=this.value;renderComic()" placeholder="如：峰哥亡命天涯"></div>
+    <div class="editor-group"><label>评论内容</label><textarea oninput="comicConfig.authorComment.text=this.value;renderComic()" style="min-height:120px" placeholder="输入作者视角的评论...">${escapeHtml(ac.text||'')}</textarea></div></div>`;
+  h += '<div class="chapter-tabs">';
+  comicConfig.chapters.forEach((c, i) => {
+    h += `<div class="chapter-tab${i===currentChapterIndex?' active':''}" onclick="switchChapter(${i})"><span>${c.number} ${c.title}</span>`;
+    if (comicConfig.chapters.length > 1) h += `<span class="tab-close" onclick="event.stopPropagation();deleteChapter(${i})">×</span>`;
+    h += '</div>';
+  });
+  h += '<div class="chapter-tab add" onclick="addChapter()">+</div></div>';
+  if (ch) {
+    h += `<div class="editor-section"><div class="section-title">章节设置</div>
+      <div class="editor-row"><div class="editor-group" style="width:70px"><label>章节号</label><input type="text" value="${escapeHtml(ch.number)}" oninput="updateChapterField('number',this.value)"></div>
+      <div class="editor-group" style="flex:1"><label>章节标题</label><input type="text" value="${escapeHtml(ch.title)}" oninput="updateChapterField('title',this.value)"></div></div></div>`;
+    h += `<div class="editor-section"><div class="section-header"><span class="section-title">场景管理</span><button class="btn btn-sm btn-primary" onclick="addScene()">+ 添加场景</button></div>`;
+    ch.scenes.forEach((scene, si) => { h += renderSceneCard(scene, si, ch.scenes.length); });
+    h += '</div>';
+  }
+  sidebar.innerHTML = h;
+}
+
+function renderSceneCard(scene, si, total) {
+  const expanded = expandedScenes.has(scene.id);
+  let h = `<div class="scene-card"><div class="scene-card-header" onclick="toggleScene('${scene.id}')">
+    <span class="scene-card-title">场景 ${si+1}${scene.illustration?' · '+((illLabels[scene.illustration])||''):''}</span>
+    <div class="scene-card-actions">
+      ${si>0?'<button class="btn-icon" onclick="event.stopPropagation();moveScene('+si+',\'up\')" title="上移">↑</button>':''}
+      ${si<total-1?'<button class="btn-icon" onclick="event.stopPropagation();moveScene('+si+',\'down\')" title="下移">↓</button>':''}
+      <button class="btn-icon delete" onclick="event.stopPropagation();deleteScene(${si})" title="删除">×</button>
+      <span style="font-size:10px;color:var(--ink-light)">${expanded?'▼':'▶'}</span>
+    </div></div>`;
+  if (expanded) {
+    h += `<div class="scene-card-body">
+      <div class="editor-row">
+        <div class="editor-group" style="flex:1"><label>场景样式</label><select onchange="updateSceneField(${si},'type',this.value)">
+          <option value="normal"${scene.type==='normal'?' selected':''}>普通</option>
+          <option value="dramatic"${scene.type==='dramatic'?' selected':''}>戏剧性</option>
+          <option value="romantic"${scene.type==='romantic'?' selected':''}>浪漫</option>
+          <option value="rain"${scene.type==='rain'?' selected':''}>雨天</option>
+        </select></div>
+        <div class="editor-group" style="flex:1"><label>插画</label><select onchange="updateSceneField(${si},'illustration',this.value)">
+          <option value="">无插画</option>`;
+    Object.keys(illustrations).forEach(k => { h += `<option value="${k}"${scene.illustration===k?' selected':''}>${illLabels[k]||k}</option>`; });
+    h += `</select></div></div>
+      <div class="editor-group"><label>时间线</label><input type="text" value="${escapeHtml(scene.timeline)}" oninput="updateSceneField(${si},'timeline',this.value)"></div>
+      <div class="editor-group"><label>旁白/说明</label><textarea oninput="updateSceneField(${si},'caption',this.value)">${escapeHtml(scene.caption)}</textarea></div>
+      <div class="dialogue-section"><div class="section-header"><span class="section-title">对话内容</span></div>`;
+    scene.dialogues.forEach((item, di) => {
+      if (item.thought) { h += renderThoughtItem(si, di, item, scene.dialogues.length); }
+      else { h += renderDialogueItem(si, di, item, scene.dialogues.length); }
+    });
+    h += `<div class="dialogue-add-buttons">
+      <button class="btn btn-sm btn-primary" onclick="addDialogueItem(${si})">+ 添加对话</button>
+      <button class="btn btn-sm btn-secondary" onclick="addThoughtItem(${si})">+ 添加内心独白</button></div></div></div>`;
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderDialogueItem(si, di, item, total) {
+  const spk = item.speaker || 'him';
+  let h = `<div class="dialogue-item ${spk}">
+    <div class="dialogue-header">
+      <select onchange="updateDialogueField(${si},${di},'speaker',this.value)">
+        <option value="him"${spk==='him'?' selected':''}>他</option>
+        <option value="her"${spk==='her'?' selected':''}>她</option>
+      </select>
+      <input type="text" value="${escapeHtml(item.name||'')}" oninput="updateDialogueField(${si},${di},'name',this.value)" placeholder="角色名">
+    </div>
+    <div class="editor-group" style="margin-bottom:0"><textarea id="dlg-${si}-${di}" oninput="updateDialogueField(${si},${di},'text',this.value)" style="min-height:48px">${escapeHtml(item.text||'')}</textarea>
+    <div class="format-toolbar">
+      <button class="fmt-btn" onclick="insertFmt('dlg-${si}-${di}','<b>','</b>')" title="加粗">B</button>
+      <button class="fmt-btn" onclick="insertFmt('dlg-${si}-${di}','<i>','</i>')" title="斜体">I</button>
+      <button class="fmt-btn" onclick="insertFmt('dlg-${si}-${di}','<s>','</s>')" title="删除线">S</button>
+      <button class="fmt-btn" onclick="insertFmt('dlg-${si}-${di}','<br>','')" title="换行">br</button>
+      <button class="fmt-btn" onclick="insertFmt('dlg-${si}-${di}','<span class=&quot;thought&quot;>','</span>')" title="内心独白">独白</button>
+    </div></div>
+    <div class="dialogue-footer">
+      ${di>0?'<button class="btn-icon" onclick="moveDialogueItem('+si+','+di+',\'up\')" title="上移">↑</button>':''}
+      ${di<total-1?'<button class="btn-icon" onclick="moveDialogueItem('+si+','+di+',\'down\')" title="下移">↓</button>':''}
+      <button class="btn-icon delete" onclick="deleteDialogueItem(${si},${di})" title="删除">×</button>
+    </div></div>`;
+  return h;
+}
+
+function renderThoughtItem(si, di, item, total) {
+  return `<div class="thought-item">
+    <div class="editor-group" style="margin-bottom:0"><label style="color:var(--sky-dark)">内心独白</label>
+    <textarea id="tht-${si}-${di}" oninput="updateThoughtField(${si},${di},this.value)" style="min-height:36px">${escapeHtml(item.thought||'')}</textarea></div>
+    <div class="dialogue-footer">
+      ${di>0?'<button class="btn-icon" onclick="moveDialogueItem('+si+','+di+',\'up\')" title="上移">↑</button>':''}
+      ${di<total-1?'<button class="btn-icon" onclick="moveDialogueItem('+si+','+di+',\'down\')" title="下移">↓</button>':''}
+      <button class="btn-icon delete" onclick="deleteDialogueItem(${si},${di})" title="删除">×</button>
+    </div></div>`;
+}
+
+// === 章节操作 ===
+function switchChapter(idx) {
+  currentChapterIndex = idx;
+  expandedScenes.clear();
+  renderEditor();
+  renderComic();
+}
+function updateChapterField(field, val) {
+  comicConfig.chapters[currentChapterIndex][field] = val;
+  renderEditor();
+  renderComic();
+}
+function addChapter() {
+  const n = comicConfig.chapters.length + 1;
+  const ch = { id: 'chapter'+n, number: '第'+n+'章', title: '新章节', scenes: [{ id: 'scene'+n+'_1', type:'normal', illustration:'', timeline:'', caption:'', dialogues:[] }] };
+  comicConfig.chapters.push(ch);
+  currentChapterIndex = comicConfig.chapters.length - 1;
+  expandedScenes.clear();
+  expandedScenes.add(ch.scenes[0].id);
+  renderEditor();
+  renderComic();
+}
+function deleteChapter(idx) {
+  if (comicConfig.chapters.length <= 1) { showToast('至少保留一个章节'); return; }
+  comicConfig.chapters.splice(idx, 1);
+  if (currentChapterIndex >= comicConfig.chapters.length) currentChapterIndex = comicConfig.chapters.length - 1;
+  expandedScenes.clear();
+  renderEditor();
+  renderComic();
+}
+
+// === 场景操作 ===
+function toggleScene(sid) {
+  if (expandedScenes.has(sid)) expandedScenes.delete(sid);
+  else { expandedScenes.add(sid); scrollToScene(sid); }
+  renderEditor();
+}
+function scrollToScene(sid) {
+  setTimeout(() => { const el = document.getElementById('preview-'+sid); if (el) el.scrollIntoView({behavior:'smooth',block:'center'}); }, 100);
+}
+function updateSceneField(si, field, val) {
+  comicConfig.chapters[currentChapterIndex].scenes[si][field] = val;
+  renderComic();
+}
+function addScene() {
+  const ch = comicConfig.chapters[currentChapterIndex];
+  const n = ch.scenes.length + 1;
+  const scene = { id: 'scene'+(currentChapterIndex+1)+'_'+n, type:'normal', illustration:'', timeline:'', caption:'', dialogues:[] };
+  ch.scenes.push(scene);
+  expandedScenes.add(scene.id);
+  renderEditor();
+  renderComic();
+  scrollToScene(scene.id);
+}
+function deleteScene(si) {
+  const ch = comicConfig.chapters[currentChapterIndex];
+  if (ch.scenes.length <= 1) { showToast('至少保留一个场景'); return; }
+  const sid = ch.scenes[si].id;
+  ch.scenes.splice(si, 1);
+  expandedScenes.delete(sid);
+  renderEditor();
+  renderComic();
+}
+function moveScene(si, dir) {
+  const ch = comicConfig.chapters[currentChapterIndex];
+  const ni = dir === 'up' ? si - 1 : si + 1;
+  if (ni < 0 || ni >= ch.scenes.length) return;
+  [ch.scenes[si], ch.scenes[ni]] = [ch.scenes[ni], ch.scenes[si]];
+  renderEditor();
+  renderComic();
+}
+
+// === 对话条目操作 ===
+function addDialogueItem(si) {
+  comicConfig.chapters[currentChapterIndex].scenes[si].dialogues.push({ speaker:'him', name:'', text:'' });
+  renderEditor();
+  renderComic();
+}
+function addThoughtItem(si) {
+  comicConfig.chapters[currentChapterIndex].scenes[si].dialogues.push({ thought:'' });
+  renderEditor();
+  renderComic();
+}
+function deleteDialogueItem(si, di) {
+  comicConfig.chapters[currentChapterIndex].scenes[si].dialogues.splice(di, 1);
+  renderEditor();
+  renderComic();
+}
+function moveDialogueItem(si, di, dir) {
+  const arr = comicConfig.chapters[currentChapterIndex].scenes[si].dialogues;
+  const ni = dir === 'up' ? di - 1 : di + 1;
+  if (ni < 0 || ni >= arr.length) return;
+  [arr[di], arr[ni]] = [arr[ni], arr[di]];
+  renderEditor();
+  renderComic();
+}
+function updateDialogueField(si, di, field, val) {
+  const d = comicConfig.chapters[currentChapterIndex].scenes[si].dialogues[di];
+  if (field === 'speaker') {
+    d.speaker = val;
+    renderEditor();
+  } else {
+    d[field] = val;
+  }
+  renderComic();
+}
+function updateThoughtField(si, di, val) {
+  comicConfig.chapters[currentChapterIndex].scenes[si].dialogues[di].thought = val;
+  renderComic();
+}
+
+// === 格式标签插入 ===
+function insertFmt(id, open, close) {
+  const ta = document.getElementById(id);
+  if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.substring(s, e);
+  ta.value = ta.value.substring(0, s) + open + sel + close + ta.value.substring(e);
+  ta.selectionStart = s + open.length;
+  ta.selectionEnd = s + open.length + sel.length;
+  ta.focus();
+  ta.dispatchEvent(new Event('input'));
+}
+
+// === 导出功能 ===
+function exportConfig() {
+  const blob = new Blob([JSON.stringify(comicConfig, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'comic-config.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+}
+async function exportAsImage() {
+  const container = document.getElementById('comicContainer');
+  if (!container) return;
+  showToast('正在生成图片...');
+  try {
+    const canvas = await html2canvas(container, { backgroundColor:'#FFF8F0', scale:2, useCORS:true, allowTaint:true, logging:false, width:container.scrollWidth, height:container.scrollHeight });
+    const link = document.createElement('a'); link.download = comicConfig.title + '.png'; link.href = canvas.toDataURL('image/png'); link.click();
+    showToast('图片已导出！');
+  } catch (err) { console.error(err); showToast('导出失败，请重试'); }
+}
+
+// === 初始化 ===
+document.addEventListener('DOMContentLoaded', function() {
+  if (comicConfig.chapters.length > 0 && comicConfig.chapters[0].scenes.length > 0) {
+    expandedScenes.add(comicConfig.chapters[0].scenes[0].id);
+  }
+  renderEditor();
+  renderComic();
+});
+</script>
 </body>
 </html>
